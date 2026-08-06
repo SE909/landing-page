@@ -1,0 +1,52 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --aic-coral: #e8734a;
+  --aic-peach: #f0a673;
+  --aic-cream: #f7f1eb;
+  --aic-ink: #1d1d1f;
+  --aic-muted: #6b6357;
+  --aic-line: #e7ddd0;
+  --aic-gradient: linear-gradient(175deg, var(--aic-coral) 0%, var(--aic-peach) 100%);
+}
+
+body {
+  @apply antialiased;
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--aic-ink);
+  background: var(--aic-cream);
+}
+
+.app-shell { background: var(--aic-cream); color: var(--aic-ink); }
+.app-header { border-color: var(--aic-line); background: rgba(247, 241, 235, .88); }
+.app-surface { @apply bg-white; border-color: var(--aic-line); }
+.app-title { color: var(--aic-ink); }
+.app-copy { color: var(--aic-muted); }
+.coral-text { color: var(--aic-coral); }
+.coral-soft { background: rgba(232, 115, 74, .12); color: var(--aic-coral); }
+
+.input-field {
+  @apply w-full rounded-xl border bg-white px-4 py-2.5 text-sm outline-none transition;
+  border-color: var(--aic-line);
+  color: var(--aic-ink);
+}
+.input-field:focus { border-color: var(--aic-coral); box-shadow: 0 0 0 3px rgba(232, 115, 74, .16); }
+.label-field { @apply mb-1.5 block text-sm font-semibold; color: var(--aic-muted); }
+
+.btn-primary {
+  @apply rounded-full px-6 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50;
+  background: var(--aic-gradient);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(232, 115, 74, .28); }
+.btn-secondary { @apply rounded-full border bg-white px-6 py-2.5 text-sm font-semibold transition; border-color: var(--aic-line); color: var(--aic-ink); }
+.btn-secondary:hover { background: #fff8f4; border-color: var(--aic-peach); }
+.card { @apply rounded-2xl bg-white p-6 shadow-sm; border: 1px solid var(--aic-line); box-shadow: 0 18px 50px rgba(120, 90, 60, .08); }
+
+.brand-logo { height: 36px; width: auto; object-fit: contain; }
+.brand-badge { background: rgba(232, 115, 74, .12); color: var(--aic-coral); }
+
+::selection { background: rgba(232, 115, 74, .22); }

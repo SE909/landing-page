@@ -1,0 +1,98 @@
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { generateLandingPage, getCampaign } from "../api/client";
+import ExportPanel from "../components/preview/ExportPanel";
+import LivePreview from "../components/preview/LivePreview";
+import Navbar from "../components/ui/Navbar";
+
+export default function PreviewPage() {
+  const { id } = useParams<{ id: string }>();
+  const [campaignName, setCampaignName] = useState("Landing Page");
+  const [html, setHtml] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!id) return;
+    getCampaign(id)
+      .then((campaign) => {
+        if (campaign.formation?.name) {
+          setCampaignName(campaign.formation.name);
+        }
+        if (campaign.generated_html) {
+          setHtml(campaign.generated_html);
+        } else {
+          return generateLandingPage(id).then((res) => setHtml(res.html));
+        }
+      })
+      .catch(() => setError("Impossible de charger la landing page."))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const handleRegenerate = async () => {
+    if (!id) return;
+    setRegenerating(true);
+    setError("");
+    try {
+      const res = await generateLandingPage(id);
+      setHtml(res.html);
+    } catch {
+      setError("Erreur lors de la régénération.");
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="app-shell min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+          <svg className="coral-text h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <p className="text-sm font-medium text-gray-600">Chargement de l'aperçu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-shell min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-1 py-6 px-4">
+        <div className="mx-auto max-w-6xl">
+          <div className="app-surface mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm">
+            <div>
+              <Link to="/" className="coral-text inline-flex items-center gap-1 text-xs font-semibold hover:underline">
+                ← Retour au formulaire
+              </Link>
+              <h1 className="app-title mt-1 text-xl font-bold">{campaignName}</h1>
+            </div>
+            {id && (
+              <ExportPanel
+                campaignId={id}
+                onRegenerate={handleRegenerate}
+                loading={regenerating}
+              />
+            )}
+          </div>
+
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-50 p-3.5 text-sm text-red-600 border border-red-200">
+              {error}
+            </div>
+          )}
+
+          {html ? (
+            <LivePreview html={html} />
+          ) : (
+            <p className="text-gray-500">Aucune page générée.</p>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<!--AIC_TRACK_START-->
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-5WGX44LW');</script>
+
+<!-- Google Analytics 4 (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-L5ZW9YE9F3"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());gtag('config','G-L5ZW9YE9F3');</script>
+
+<!-- Meta Pixel -->
+<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','927249058388574');fbq('track','PageView');</script>
+<noscript><img height="1" width="1" style="display:none" alt=""
+src="https://www.facebook.com/tr?id=927249058388574&ev=PageView&noscript=1"/></noscript>
+
+<!-- WhatsApp click beacon -->
+<script>(function(){
+function ck(n){var m=document.cookie.match('(?:^|; )'+n+'=([^;]*)');return m?decodeURIComponent(m[1]):'';}
+document.addEventListener('click',function(e){
+  var a=e.target&&e.target.closest&&e.target.closest('a[href*="wa.me"],a[href*="api.whatsapp.com"],a[href*="web.whatsapp.com"]');
+  if(!a)return;
+  try{
+    var href=a.getAttribute('href')||'';
+    var num=(href.match(/(?:wa\.me\/|phone=)(\+?\d+)/)||[])[1]||'';
+    var ga=(ck('_ga')||'').split('.');
+    var p={to:num,loc:a.getAttribute('data-cta')||'',path:location.pathname+location.search,title:document.title,
+      ref:document.referrer,gaClientId:ga.length>=4?ga.slice(-2).join('.'):'',fbp:ck('_fbp'),fbc:ck('_fbc')};
+    var body=JSON.stringify(p);
+    if(navigator.sendBeacon){navigator.sendBeacon('/api/wa',new Blob([body],{type:'application/json'}));}
+    else{fetch('/api/wa',{method:'POST',headers:{'Content-Type':'application/json'},body:body,keepalive:true});}
+  }catch(_){}
+},true);
+})();</script>
+<!--AIC_TRACK_END-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ formation_name }} — AI Crafters</title>
+<meta name="description" content="{{ content.hero.subtitle if content and content.hero else 'Formation intensive AI Crafters' }}">
+<meta property="og:title" content="{{ formation_name }} — AI Crafters">
+<meta property="og:description" content="{{ content.hero.subtitle if content and content.hero else 'Formation intensive AI Crafters' }}">
+
+<!-- Favicon -->
+<link rel="icon" href="https://aicrafters.com/wp-content/uploads/2025/03/ogo-aic-transparent-2-150x150.png" sizes="32x32">
+<link rel="icon" href="https://aicrafters.com/wp-content/uploads/2025/03/ogo-aic-transparent-2-300x300.png" sizes="192x192">
+<link rel="apple-touch-icon" href="https://aicrafters.com/wp-content/uploads/2025/03/ogo-aic-transparent-2-300x300.png">
+
+<!-- Preconnect & Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --coral: {{ primary_color if primary_color else '#E8734A' }};
+  --coral-2: {{ secondary_color if secondary_color else '#F0A673' }};
+  --grad: linear-gradient(175deg, var(--coral) 0%, var(--coral-2) 100%);
+  --cream:#F7F1EB;--ink:#1d1d1f;--muted:#6b6357;--card:#fff;--line:#e7ddd0;--font:'Poppins',-apple-system,Segoe UI,Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font);font-size:16px;line-height:1.6;color:#4a4640;background:var(--cream);-webkit-font-smoothing:antialiased;}
+img{max-width:100%;display:block;}a{text-decoration:none;color:inherit;}ul{list-style:none;}
+h1,h2,h3,h4{font-family:var(--font);color:var(--ink);line-height:1.16;font-weight:700;}
+.container{max-width:1180px;margin:0 auto;padding:0 24px;}
+section{padding:78px 0;scroll-margin-top:86px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:15px;line-height:1;padding:15px 28px;border-radius:999px;cursor:pointer;border:none;color:#fff;background:var(--grad);transition:transform .15s,box-shadow .2s,filter .2s;}
+.btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(232,115,74,.32);}
+.btn-sm{font-size:14px;padding:11px 22px;}.btn-block{width:100%;}
+.site-header{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 0;transition:.3s;}
+.site-header.scrolled{background:rgba(247,241,235,.92);backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(120,90,60,.10);}
+.nav-wrap{display:flex;align-items:center;gap:24px;}
+.logo img{height:36px;width:auto;display:block;}
+.main-nav{display:flex;gap:24px;margin-left:14px;}
+.main-nav a{color:#4a4640;font-size:14px;font-weight:500;}.main-nav a:hover{color:var(--coral);}
+.nav-right{margin-left:auto;}
+/* hero */
+.hero{padding:140px 0 60px;}
+.hero-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:46px;align-items:center;}
+.hero-img img{width:100%;border-radius:22px;box-shadow:0 24px 60px rgba(120,90,60,.18);max-height:450px;object-fit:cover;}
+.hero h1{font-size:44px;font-weight:800;letter-spacing:-1px;margin-bottom:16px;color:var(--coral);}
+.hero .lead{font-size:18px;color:var(--muted);margin-bottom:24px;max-width:560px;}
+.hero-meta{display:flex;flex-direction:column;gap:12px;margin-bottom:26px;}
+.hero-meta li{display:flex;align-items:center;gap:12px;color:var(--ink);font-weight:500;}
+.hero-meta .ic{width:34px;height:34px;border-radius:9px;background:rgba(232,115,74,.12);color:var(--coral);display:grid;place-items:center;flex:none;}
+.hero-meta svg{width:18px;height:18px;}
+.price-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 18px 50px rgba(120,90,60,.10);}
+.price-head{display:flex;align-items:center;gap:10px;color:var(--ink);font-weight:700;font-size:18px;margin-bottom:14px;}
+.price-head .gem{color:var(--coral);}
+.price-row{display:flex;align-items:baseline;gap:12px;margin-bottom:18px;}
+.price{font-size:38px;font-weight:800;color:var(--coral);}.price .cur{font-size:18px;}
+.price-strike{font-size:18px;color:#a89c8c;text-decoration:line-through;}
+.ft{display:flex;flex-direction:column;gap:11px;margin-bottom:22px;}
+.ft li{display:flex;gap:10px;align-items:flex-start;color:var(--ink);font-size:14.5px;}
+.ft li::before{content:"";width:20px;height:20px;border-radius:50%;background:var(--grad);flex:none;margin-top:1px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");background-size:12px;background-position:center;background-repeat:no-repeat;}
+/* section head */
+.shead{text-align:center;max-width:760px;margin:0 auto 46px;}
+.shead h2{font-size:34px;margin-bottom:12px;}
+.shead p{font-size:16.5px;color:var(--muted);}
+/* outcomes */
+.outc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+.outc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;text-align:center;}
+.outc .ic{width:46px;height:46px;border-radius:50%;background:rgba(232,115,74,.12);color:var(--coral);display:grid;place-items:center;margin:0 auto 14px;}
+.outc .ic svg{width:22px;height:22px;}
+.outc h4{font-size:16px;color:var(--ink);}
+/* learn cards */
+.learn{background:#fff;}
+.learn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:26px;max-width:980px;margin:0 auto;}
+.learn-card{display:grid;grid-template-columns:100px 1fr;gap:20px;align-items:center;background:var(--cream);border:1px solid var(--line);border-radius:18px;padding:22px;}
+.learn-card .mod-num{width:80px;height:80px;border-radius:14px;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.2rem;}
+.learn-card h4{font-size:19px;color:var(--ink);margin-bottom:6px;}
+.learn-card p{font-size:14.5px;color:var(--muted);}
+/* trainers slot */
+.trainer-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:28px;max-width:760px;margin:0 auto;}
+.trainer-card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;text-align:center;padding-bottom:24px;}
+.trainer-card .photo{width:120px;height:120px;border-radius:50%;overflow:hidden;margin:28px auto 16px;border:3px solid var(--coral);}
+.trainer-card .photo img{width:100%;height:100%;object-fit:cover;}
+.trainer-card h4{font-size:18px;color:var(--ink);}
+.trainer-card .role{color:var(--coral);font-size:13px;font-weight:600;margin-top:4px;}
+.trainer-card p{font-size:13.5px;color:var(--muted);margin-top:8px;padding:0 22px;}
+/* testimonials slot */
+.testimonials{background:#fff;}
+.testimonials-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:20px;max-width:1000px;margin:0 auto;}
+.testi-card{background:var(--cream);border:1px solid var(--line);border-radius:16px;padding:24px;}
+.testi-stars{color:#f59e0b;margin-bottom:10px;}
+.testi-card p{font-size:14.5px;color:var(--ink);font-style:italic;}
+.testi-author{margin-top:12px;font-weight:700;font-size:14px;color:var(--coral);}
+/* gallery */
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:1000px;margin:0 auto;}
+.gallery img{width:100%;height:100%;object-fit:cover;border-radius:14px;aspect-ratio:4/3;}
+.gallery img:first-child{grid-column:1 / -1;aspect-ratio:16/6;}
+/* certification / final */
+.final{background:var(--grad);text-align:center;color:#fff;}
+.final .badge{display:inline-block;background:rgba(255,255,255,.2);color:#fff;font-weight:700;font-size:13px;padding:7px 16px;border-radius:30px;margin-bottom:18px;}
+.final h2{color:#fff;font-size:36px;max-width:760px;margin:0 auto 14px;}
+.final p{color:rgba(255,255,255,.92);max-width:680px;margin:0 auto 28px;font-size:17px;}
+.final .btn{background:#fff;color:var(--coral);}
+.final .btn:hover{background:#fff;filter:brightness(.98);}
+@media(max-width:980px){.main-nav{display:none;}.hero-grid{grid-template-columns:1fr;gap:30px;}.hero h1{font-size:36px;}.outc-grid{grid-template-columns:1fr 1fr;}.learn-grid{grid-template-columns:1fr;}.gallery{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.outc-grid{grid-template-columns:1fr;}.learn-card{grid-template-columns:1fr;text-align:center;}.shead h2,.final h2{font-size:26px;}.trainer-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5WGX44LW" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+<header class="site-header" id="siteHeader">
+  <div class="container nav-wrap">
+    <a href="#top" class="logo" aria-label="AI Crafters">
+      <img src="https://store.aicrafters.com/assets/brand/logo-aic-black.png" alt="AI Crafters">
+    </a>
+    <nav class="main-nav">
+      <a href="#apprendre">Programme</a>
+      <a href="#formateurs">Formateurs</a>
+      <a href="#temoignages">Témoignages</a>
+    </nav>
+    <div class="nav-right"><a href="#reserver" class="btn btn-sm">Réserver ma place</a></div>
+  </div>
+</header>
+
+<main>
+<section class="hero" id="top">
+  <div class="container hero-grid">
+    <div class="hero-img">
+      {% if user_photo %}
+      <img src="{{ user_photo }}" alt="{{ formation_name }}">
+      {% else %}
+      <img src="https://aicrafters.com/wp-content/uploads/2026/04/WORKSHOP-CLAUDE-AI-1024x1024.jpg" alt="{{ formation_name }}">
+      {% endif %}
+    </div>
+    <div class="hero-text">
+      <h1>{{ content.hero.title if content and content.hero else formation_name }}</h1>
+      <p class="lead">{{ content.hero.subtitle if content and content.hero else 'Une formation d\'excellence conçue pour maîtriser les meilleures compétences.' }}</p>
+      <ul class="hero-meta">
+        <li>
+          <span class="ic">
+            <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 3'/></svg>
+          </span> 
+          {{ duration_hours }} Heures de formation
+        </li>
+        <li>
+          <span class="ic">
+            <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z'/><circle cx='12' cy='10' r='3'/></svg>
+          </span> 
+          Format: {{ format if format else 'En ligne & Accompagné' }}
+        </li>
+      </ul>
+      
+      <div class="price-card" id="reserver">
+        <div class="price-head"><span class="gem">◆</span> Offre exclusive AI Crafters</div>
+        <div class="price-row">
+          <span class="price-strike">{{ (price * 1.35) | round | int }} {{ currency }}</span>
+          <span class="price">{{ price }} <span class="cur">{{ currency }}</span></span>
+        </div>
+        <ul class="ft">
+          <li>Accès complet à la formation {{ formation_name }}</li>
+          <li>Accompagnement par {{ user_name }}</li>
+          {% if bonuses %}
+          <li>Bonus inclus : {{ bonuses }}</li>
+          {% else %}
+          <li>Support individuel & ressources téléchargeables</li>
+          {% endif %}
+          <li>Certification de réussite AI Crafters</li>
+        </ul>
+        
+        <a href="#reserver" class="btn btn-block">{{ content.hero.cta_text if content and content.hero else "Réserver ma place" }}</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="shead"><h2>Vous repartez avec</h2></div>
+    <div class="outc-grid">
+      <div class="outc">
+        <div class="ic"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 5a3 3 0 0 0-3 3 3 3 0 0 0-3 3 3 3 0 0 0 1 5 3 3 0 0 0 5 1 3 3 0 0 0 5-1 3 3 0 0 0 1-5 3 3 0 0 0-3-3 3 3 0 0 0-3-3z'/></svg></div>
+        <h4>Maîtrise Pratique</h4>
+      </div>
+      <div class="outc">
+        <div class="ic"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg></div>
+        <h4>Productivité Décuplée</h4>
+      </div>
+      <div class="outc">
+        <div class="ic"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 2v6M15 2v6M7 8h10v3a5 5 0 0 1-10 0z'/><path d='M12 16v6'/></svg></div>
+        <h4>Projets Opérationnels</h4>
+      </div>
+      <div class="outc">
+        <div class="ic"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='8' width='16' height='12' rx='2'/><path d='M12 2v4M9 14h.01M15 14h.01'/></svg></div>
+        <h4>Accompagnement Pro</h4>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="learn" id="apprendre">
+  <div class="container">
+    <div class="shead">
+      <h2>Ce que vous allez apprendre</h2>
+      <p>{{ content.program.intro if content and content.program else 'Un programme structuré pour maîtriser chaque compétence pas à pas.' }}</p>
+    </div>
+    <div class="learn-grid">
+      {% for module in modules %}
+      <div class="learn-card">
+        <div class="mod-num">M{{ loop.index }}</div>
+        <div>
+          <h4>{{ module.title }}</h4>
+          <p>{{ module.description }} ({{ module.duration }})</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section id="formateurs">
+  <div class="container">
+    <div class="shead"><h2>Votre Formateur</h2></div>
+    <div class="trainer-grid">
+      <article class="trainer-card">
+        <div class="photo">
+          {% if user_photo %}
+          <img src="{{ user_photo }}" alt="{{ user_name }}">
+          {% else %}
+          <img src="https://hev8jdevoiugntoh.public.blob.vercel-storage.com/morad-hOatvVQjNSStarib37WhHjqrGkjbJ6.jpg" alt="{{ user_name }}">
+          {% endif %}
+        </div>
+        <div class="trainer-body">
+          <h4>{{ user_name }}</h4>
+          <div class="role">Formateur & Expert AI Crafters</div>
+          <p>{{ user_bio }}</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="testimonials" id="temoignages">
+  <div class="container">
+    <div class="shead"><h2>Ils nous font confiance</h2></div>
+    {% if testimonials %}
+    <div class="testimonials-grid">
+      {% for t in testimonials %}
+      <div class="testi-card">
+        <div class="testi-stars">{% for i in range(t.rating) %}★{% endfor %}</div>
+        <p>"{{ t.text }}"</p>
+        <div class="testi-author">— {{ t.name }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="testimonials-grid">
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p>"Une formation complète et indispensable pour monter rapidement en compétences."</p>
+        <div class="testi-author">— Alumni AI Crafters</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="shead"><h2>Retour en images</h2></div>
+    <div class="gallery">
+      <img src="https://aicrafters.com/wp-content/uploads/2025/07/workshop-n8n-1ere-edition-1.jpg" alt="Workshop AI Crafters">
+      <img src="https://aicrafters.com/wp-content/uploads/2025/07/workshop-n8n-1ere-edition-2.jpg" alt="Session formation">
+      <img src="https://aicrafters.com/wp-content/uploads/2025/07/workshop-n8n-1ere-edition-3.jpg" alt="Apprenants AI Crafters">
+      <img src="https://aicrafters.com/wp-content/uploads/2025/07/workshop-n8n-1ere-edition-4.jpg" alt="Pratique guidée">
+      <img src="https://aicrafters.com/wp-content/uploads/2025/07/workshop-n8n-1ere-edition-5.jpg" alt="Certification AI Crafters">
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="container">
+    <span class="badge">Certification officielle AI Crafters</span>
+    <h2>{{ content.pricing.headline if content and content.pricing else 'Prêt à accélérer votre carrière ?' }}</h2>
+    <p>{{ content.pricing.value_proposition if content and content.pricing else 'Les places sont limitées. Réservez votre session dès maintenant.' }}</p>
+    <a href="#reserver" class="btn">{{ content.pricing.cta_text if content and content.pricing else 'Réserver ma place' }}</a>
+  </div>
+</section>
+</main>
+
+<style>
+.site-footer{background:var(--foot-bg,var(--ac-dark,#0b1020));color:#fff;padding:70px 0 28px}
+.site-footer.foot-light{background:var(--foot-bg,#fff);color:#1a1a1a;border-top:1px solid #ececec}
+.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;margin-bottom:50px}
+.foot-grid h5{color:#fff;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;margin-bottom:18px}
+.site-footer.foot-light .foot-grid h5{color:#1a1a1a}
+.foot-grid p,.foot-grid li{color:#a8b3c0;font-size:14px;margin-bottom:8px;font-weight:400}
+.foot-grid a{color:#a8b3c0;transition:.15s}
+.foot-grid a:hover{color:#fff}
+.site-footer.foot-light .foot-grid p,.site-footer.foot-light .foot-grid li,.site-footer.foot-light .foot-grid a{color:#555}
+.site-footer.foot-light .foot-grid a:hover{color:#000}
+.foot-grid ul{list-style:none;padding:0;margin:0}
+.foot-brand{display:flex;flex-direction:column;gap:14px;color:#fff;align-items:flex-start;text-align:left}
+.site-footer.foot-light .foot-brand{color:#1a1a1a}
+.foot-logo{height:46px;width:auto;display:block}
+.fl-light{display:none}
+.site-footer.foot-light .fl-dark{display:none}
+.site-footer.foot-light .fl-light{display:block}
+.foot-brand p{margin:0;max-width:320px}
+.socials{display:flex;gap:12px;margin-top:8px}
+.socials a{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;transition:.2s}
+.socials a:hover{background:#E8734A}
+.socials svg{width:16px;height:16px;color:#fff}
+.site-footer.foot-light .socials a{background:#f1f1f1}
+.site-footer.foot-light .socials svg{color:#1a1a1a}
+.site-footer.foot-light .socials a:hover{background:#1a1a1a}
+.site-footer.foot-light .socials a:hover svg{color:#fff}
+.foot-bot{border-top:1px solid rgba(255,255,255,.1);padding-top:24px;display:flex;flex-direction:column;gap:16px;color:#7E8B9A;font-size:13px;font-weight:400}
+.site-footer.foot-light .foot-bot{border-top:1px solid #e5e5e5;color:#888}
+.foot-bot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.qualiopi-mention{font-size:12px;line-height:1.5;color:#7E8B9A;max-width:700px}
+.site-footer.foot-light .qualiopi-mention{color:#888}
+.foot-qualiopi{display:inline-block;margin-top:16px;background:#fff;padding:9px 11px;border-radius:8px;line-height:0}
+.site-footer.foot-light .foot-qualiopi{border:1px solid #ececec}
+.foot-qualiopi img{height:74px;width:auto;display:block}
+.site-footer .foot-wrap{max-width:1180px;margin:0 auto;padding:0 24px;width:100%}
+@media(max-width:880px){.foot-grid{grid-template-columns:1fr 1fr;gap:36px}}
+@media(max-width:560px){.foot-grid{grid-template-columns:1fr}.site-footer .foot-wrap{padding:0 16px}}
+</style>
+<footer class="site-footer foot-light">
+  <div class="foot-wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <img class="foot-logo fl-dark" src="https://store.aicrafters.com/assets/brand/logo-aic-black.png" alt="AI Crafters">
+        <img class="foot-logo fl-light" src="https://store.aicrafters.com/assets/brand/logo-aic-black.png" alt="AI Crafters">
+        <p>Mettre l'IA à la portée de tous les professionnels. + de 20 000 apprenants formés dans 8 pays sur la plateforme AI Crafters.</p>
+        <div class="socials" aria-label="Suivez AI Crafters">
+          <a href="https://www.linkedin.com/company/93316346/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8.5 18H6V10h2.5zm-1.3-9.1a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM18 18h-2.5v-4c0-1-.4-1.7-1.3-1.7s-1.5.6-1.5 1.7v4H10V10h2.5v1.1c.4-.6 1.3-1.3 2.4-1.3 2.4 0 3.1 1.5 3.1 3.5z"/></svg></a>
+          <a href="https://www.instagram.com/aicrafters/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+          <a href="https://x.com/AICrafters" target="_blank" rel="noopener" aria-label="X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+        </div>
+      </div>
+      <div>
+        <h5>Formations en ligne</h5>
+        <ul>
+          <li><a href="https://aicrafters.com/claude-mastery">Claude Mastery</a></li>
+          <li><a href="https://aicrafters.com/aicademy">AICademy</a></li>
+          <li><a href="https://aicrafters.com/formation-n8n">Formation n8n</a></li>
+          <li><a href="https://aicrafters.com/copilot-365">Microsoft Copilot 365</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Ressources</h5>
+        <ul>
+          <li><a href="https://aicrafters.com/blog">Blog</a></li>
+          <li><a href="https://aicrafters.com/newsletter">Newsletter</a></li>
+          <li><a href="https://aicrafters.com/communaute">Communauté</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Contact</h5>
+        <ul>
+          <li><a href="mailto:hello@aicrafters.com">hello@aicrafters.com</a></li>
+          <li><a href="https://wa.me/212663478842">+212 663-47-88-42</a></li>
+          <li>AI Crafters SARL · Casablanca</li>
+        </ul>
+        <span class="foot-qualiopi"><img src="https://hev8jdevoiugntoh.public.blob.vercel-storage.com/qualiopi-certification-xQOgapoOLr7jeEWJJOkg3U5BQVvP1A.webp" alt="Organisme de formation certifié Qualiopi" width="346" height="224" loading="lazy" decoding="async"></span>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <span class="qualiopi-mention">AI Crafters est un organisme de formation certifié Qualiopi au titre de la catégorie : actions de formation.</span>
+      <div class="foot-bot-row">
+        <span>&copy; 2026 AI Crafters. Tous droits réservés.</span>
+        <span><a href="https://aicrafters.com/mentions-legales">Mentions légales</a> &middot; <a href="https://aicrafters.com/politique-de-confidentialite/">Confidentialité</a></span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+.wa-fab{position:fixed;right:20px;bottom:22px;z-index:80;display:inline-flex;align-items:center;gap:10px;background:#25D366;color:#fff;padding:12px 18px 12px 14px;border-radius:999px;font-weight:700;font-size:14.5px;box-shadow:0 8px 24px rgba(37,211,102,.4);transition:.2s;text-decoration:none;border:2px solid #fff}
+.wa-fab:hover{background:#1FB855;transform:translateY(-2px) scale(1.02);box-shadow:0 12px 32px rgba(37,211,102,.5)}
+.wa-fab .wa-ico{width:36px;height:36px;border-radius:50%;background:#fff;color:#25D366;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.wa-fab .wa-ico svg{width:22px;height:22px}
+.wa-fab .wa-pulse{position:absolute;top:8px;right:8px;width:14px;height:14px;border-radius:50%;background:#EF4444;border:2px solid #fff;animation:wa-pulse 1.6s infinite}
+@keyframes wa-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(239,68,68,.6)}50%{transform:scale(1.15);box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+@media (max-width:560px){.wa-fab{right:14px;bottom:80px;padding:10px 14px 10px 10px;font-size:13px}.wa-fab .wa-ico{width:30px;height:30px}.wa-fab .wa-ico svg{width:18px;height:18px}}
+</style>
+<a class="wa-fab" href="https://wa.me/212663478842?text=Bonjour%2C%20j'ai%20une%20question%20sur%20la%20formation" target="_blank" rel="noopener" aria-label="Parler à un conseiller sur WhatsApp" data-cta="wa_fab">
+  <span class="wa-ico" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0 0 20.465 3.488"/></svg>
+  </span>
+  <span class="wa-label-long">Parler à un conseiller</span>
+  <span class="wa-pulse" aria-hidden="true"></span>
+</a>
+
+<script>
+var h=document.getElementById('siteHeader');
+if(h){ addEventListener('scroll',function(){h.classList.toggle('scrolled',scrollY>60);}); }
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+motor==3.6.0
+# 2.10.3 predates Python 3.14 and forces pip to compile pydantic-core.
+# This release provides a prebuilt wheel for the current runtime.
+pydantic==2.13.4
+pydantic-settings==2.7.0
+httpx==0.28.1
+python-multipart==0.0.20
+python-dotenv==1.0.1
+jinja2==3.1.5
+aiofiles==24.1.0
+email-validator==2.2.0
+beautifulsoup4==4.14.3
