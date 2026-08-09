@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -62,6 +62,7 @@ class CampaignCreate(BaseModel):
 
 class CampaignResponse(CampaignCreate):
     id: str
+    page_state: Optional[dict[str, Any]] = None
     generated_html: Optional[str] = None
     status: str = "draft"
     created_at: datetime

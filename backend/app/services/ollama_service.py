@@ -52,7 +52,11 @@ def generate_fallback_content(campaign: dict) -> dict:
     }
 
 
+HTML_MARKER = re.compile(r"<\s*(!doctype|html|body|div|section|h1|p)\b", re.IGNORECASE)
+
+
 async def generate_section_content(prompt: str, campaign: dict = None) -> dict:
+    """Ask Ollama for structured JSON only. Any HTML output is rejected."""
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
@@ -61,6 +65,7 @@ async def generate_section_content(prompt: str, campaign: dict = None) -> dict:
                     "model": settings.ollama_model,
                     "prompt": prompt,
                     "stream": False,
+                    "format": "json",
                     "options": {"temperature": 0.7, "num_predict": 2048},
                 },
             )
@@ -70,11 +75,16 @@ async def generate_section_content(prompt: str, campaign: dict = None) -> dict:
         cleaned_raw = re.sub(r"```json\s*", "", raw)
         cleaned_raw = re.sub(r"```\s*", "", cleaned_raw).strip()
 
-        match = re.search(r"\{.*\}", cleaned_raw, re.DOTALL)
-        if match:
-            return json.loads(match.group())
+        if HTML_MARKER.search(cleaned_raw):
+            logger.warning("Ollama returned HTML instead of JSON. Using fallback.")
+        else:
+            match = re.search(r"\{.*\}", cleaned_raw, re.DOTALL)
+            if match:
+                parsed = json.loads(match.group())
+                if isinstance(parsed, dict):
+                    return parsed
 
-        logger.warning("Ollama response didn't contain valid JSON structure. Using fallback.")
+            logger.warning("Ollama response didn't contain valid JSON structure. Using fallback.")
     except Exception as e:
         logger.warning(f"Ollama generation call failed ({e}). Utilizing copywriting fallback engine.")
 
