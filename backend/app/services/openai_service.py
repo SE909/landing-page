@@ -97,9 +97,15 @@ def _parse_tool_call(choice: dict) -> dict:
 
 
 async def edit_page_state(
-    message: str, page_state: dict, history: list[dict] | None = None
+    message: str,
+    page_state: dict,
+    history: list[dict] | None = None,
+    force_edit: bool = False,
 ) -> dict:
-    """Answer a question about the page, or edit it. Returns `{reply, updates, visibility}`."""
+    """Answer a question about the page, or edit it. Returns `{reply, updates, visibility}`.
+
+    `force_edit` is used by skills: the model must call `apply_edits`.
+    """
     if not settings.openai_api_key:
         raise OpenAIError(
             "Clé OpenAI manquante : définissez OPENAI_API_KEY dans le fichier .env du backend."
@@ -132,7 +138,11 @@ async def edit_page_state(
                     "messages": messages,
                     "temperature": 0.3,
                     "tools": [APPLY_EDITS_TOOL],
-                    "tool_choice": "auto",
+                    "tool_choice": (
+                        {"type": "function", "function": {"name": "apply_edits"}}
+                        if force_edit
+                        else "auto"
+                    ),
                 },
             )
             response.raise_for_status()

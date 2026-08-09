@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { chatEditPage } from "../../api/client";
+import { useEffect, useState } from "react";
+import { chatEditPage, listSkills, type Skill } from "../../api/client";
 
 interface Props {
   campaignId: string;
@@ -24,7 +24,15 @@ export default function ChatPanel({ campaignId, onHtmlUpdate }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const send = async (text: string) => {
+  const [skills, setSkills] = useState<Skill[]>([]);
+
+  useEffect(() => {
+    listSkills()
+      .then(setSkills)
+      .catch(() => setSkills([]));
+  }, []);
+
+  const send = async (text: string, skill?: Skill) => {
     const message = text.trim();
     if (!message || loading) return;
 
@@ -34,7 +42,7 @@ export default function ChatPanel({ campaignId, onHtmlUpdate }: Props) {
     setError("");
     setLoading(true);
     try {
-      const res = await chatEditPage(campaignId, message, history);
+      const res = await chatEditPage(campaignId, message, history, skill?.id);
       if (res.html) onHtmlUpdate(res.html);
       const changed = res.changed?.length
         ? `\n\nSections mises à jour : ${res.changed.join(", ")}`
@@ -61,6 +69,23 @@ export default function ChatPanel({ campaignId, onHtmlUpdate }: Props) {
           Posez une question ou demandez une modification.
         </p>
       </div>
+
+      {skills.length > 0 && (
+        <div className="flex flex-wrap gap-2 border-b border-[#e7ddd0] px-4 py-3">
+          {skills.map((skill) => (
+            <button
+              key={skill.id}
+              type="button"
+              disabled={loading}
+              title={skill.description}
+              onClick={() => send(skill.label, skill)}
+              className="rounded-full border border-[#e7ddd0] bg-[#faf6f1] px-3 py-1 text-xs font-medium hover:bg-[#f2e9df] disabled:opacity-50"
+            >
+              {skill.icon} {skill.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
         {messages.length === 0 && (

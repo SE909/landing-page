@@ -43,10 +43,27 @@ export interface ChatEditResponse {
 export async function chatEditPage(
   campaignId: string,
   message: string,
-  history: ChatMessage[] = []
+  history: ChatMessage[] = [],
+  skillId?: string
 ) {
-  const res = await api.post(`/campaigns/${campaignId}/chat`, { message, history });
+  const res = await api.post(`/campaigns/${campaignId}/chat`, {
+    message,
+    history,
+    skill_id: skillId,
+  });
   return res.data as ChatEditResponse;
+}
+
+export interface Skill {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+export async function listSkills() {
+  const res = await api.get("/skills");
+  return res.data as Skill[];
 }
 
 export async function uploadImage(file: File) {
