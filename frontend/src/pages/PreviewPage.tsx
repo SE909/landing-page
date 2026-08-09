@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { generateLandingPage, getCampaign } from "../api/client";
+import ChatPanel from "../components/preview/ChatPanel";
 import ExportPanel from "../components/preview/ExportPanel";
 import LivePreview from "../components/preview/LivePreview";
 import Navbar from "../components/ui/Navbar";
@@ -87,7 +88,10 @@ export default function PreviewPage() {
           )}
 
           {html ? (
-            <LivePreview html={html} />
+            <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
+              <LivePreview html={html} />
+              {id && <ChatPanel campaignId={id} onHtmlUpdate={setHtml} />}
+            </div>
           ) : (
             <p className="text-gray-500">Aucune page générée.</p>
           )}

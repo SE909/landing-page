@@ -35,6 +35,18 @@ npm run dev
 
 Ouvrir http://localhost:5173
 
+## Chatbot d'édition (OpenAI)
+
+La génération reste sur Ollama. Le chatbot de l'écran d'aperçu utilise OpenAI pour modifier le
+`page_state` structuré ; le HTML est ensuite réassemblé par le template.
+
+Dans `backend/.env` :
+
+```env
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+```
+
 ## Changer de modèle Ollama
 
 Dans `backend/.env` :
@@ -48,5 +60,15 @@ Puis : `ollama pull llama3.2:7b`
 ## Structure
 
 - **Wizard 5 étapes** : formateur, formation, branding, preuve sociale, récap
-- **Génération IA** : Ollama produit du contenu JSON, assemblé dans un template HTML fixe
+- **Génération IA** : Ollama produit un `page_state` JSON structuré, assemblé dans un template HTML fixe
+- **Chatbot** : OpenAI modifie le `page_state`, jamais le HTML
 - **Preview live** + **Export HTML** + **Régénérer**
+
+## Tests backend
+
+```powershell
+cd backend
+python -m tests.test_page_state
+python -m tests.test_generate_route
+python -m tests.test_chat_route
+```
