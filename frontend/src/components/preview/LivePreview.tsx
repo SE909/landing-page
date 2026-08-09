@@ -17,23 +17,59 @@ export default function LivePreview({ html, aside }: Props) {
   const [fullscreen, setFullscreen] = useState(false);
   const [updated, setUpdated] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
-  // Scroll offset kept across re-renders so a chatbot edit doesn't jump back to the top.
-  const scrollTop = useRef(0);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  // The iframe is grown to its full content height, so the scrolling element is the
+  // viewer container (full screen) or the page itself — never the iframe window.
+  const liveScroll = useRef(0);
+  const savedScroll = useRef(0);
+  const restoring = useRef(false);
   const firstRender = useRef(true);
+
+  const readScroll = () =>
+    fullscreen ? viewerRef.current?.scrollTop ?? 0 : window.scrollY;
+
+  const restoreScroll = () => {
+    if (!restoring.current) return;
+    if (fullscreen) viewerRef.current?.scrollTo(0, savedScroll.current);
+    else window.scrollTo(0, savedScroll.current);
+  };
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (!restoring.current) liveScroll.current = readScroll();
+    };
+    const viewer = viewerRef.current;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    viewer?.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      viewer?.removeEventListener("scroll", onScroll);
+    };
+  }, [fullscreen]);
 
   useEffect(() => {
     setFrameHeight(900);
   }, [html, viewport]);
 
   useEffect(() => {
-    scrollTop.current = frameRef.current?.contentWindow?.scrollY ?? scrollTop.current;
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
+    // Freeze the offset before the iframe reload shrinks the page and clamps it.
+    savedScroll.current = liveScroll.current;
+    restoring.current = true;
+
     setUpdated(true);
-    const timer = window.setTimeout(() => setUpdated(false), 1500);
-    return () => window.clearTimeout(timer);
+    const badgeTimer = window.setTimeout(() => setUpdated(false), 1500);
+    const releaseTimer = window.setTimeout(() => {
+      restoring.current = false;
+      liveScroll.current = readScroll();
+    }, 1500);
+    return () => {
+      window.clearTimeout(badgeTimer);
+      window.clearTimeout(releaseTimer);
+    };
   }, [html]);
 
   useEffect(() => {
@@ -77,7 +113,7 @@ export default function LivePreview({ html, aside }: Props) {
       document.documentElement.offsetHeight
     );
     setFrameHeight(Math.max(height, 600));
-    frame.contentWindow?.scrollTo(0, scrollTop.current);
+    window.requestAnimationFrame(restoreScroll);
   };
 
   return (
@@ -184,6 +220,7 @@ export default function LivePreview({ html, aside }: Props) {
 
       {/* Main Content Viewer */}
       <div
+        ref={viewerRef}
         className={`flex flex-col justify-center gap-4 bg-[#f7f1eb] p-4 lg:flex-row lg:items-start ${
           fullscreen ? "flex-1 overflow-auto" : "min-h-[75vh]"
         }`}
