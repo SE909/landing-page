@@ -88,10 +88,10 @@ export default function PreviewPage() {
           )}
 
           {html ? (
-            <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-              <LivePreview html={html} />
-              {id && <ChatPanel campaignId={id} onHtmlUpdate={setHtml} />}
-            </div>
+            <LivePreview
+              html={html}
+              aside={id && <ChatPanel campaignId={id} onHtmlUpdate={setHtml} />}
+            />
           ) : (
             <p className="text-gray-500">Aucune page générée.</p>
           )}
