@@ -5,9 +5,9 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 
 from app.db.mongodb import get_campaigns_collection
+from app.services.ai_generation_service import generate_section_content
 from app.services.html_assembler import assemble_html
 from app.services.html_validator import validate_and_clean_html
-from app.services.ollama_service import generate_section_content
 from app.services.prompt_builder import build_content_prompt
 
 router = APIRouter(prefix="/api/campaigns", tags=["generate"])
@@ -31,6 +31,7 @@ async def generate_landing_page(campaign_id: str):
         {
             "$set": {
                 "generated_html": html,
+                "page_state": ai_content,
                 "status": "generated",
                 "updated_at": datetime.utcnow(),
             }

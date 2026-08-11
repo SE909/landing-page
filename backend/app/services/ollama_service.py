@@ -52,14 +52,45 @@ def generate_fallback_content(campaign: dict) -> dict:
     }
 
 
-async def generate_section_content(prompt: str, campaign: dict = None) -> dict:
+def validate_page_state(page_state: dict) -> bool:
+    if not isinstance(page_state, dict):
+        return False
+
+    required_sections = [
+        "hero",
+        "problem_solution",
+        "program",
+        "social_proof",
+        "pricing",
+        "instructor",
+    ]
+
+    for section in required_sections:
+        if section not in page_state or not isinstance(page_state[section], (dict, list)):
+            return False
+
+    hero = page_state.get("hero", {})
+    if not isinstance(hero, dict) or not hero.get("title") or not hero.get("subtitle"):
+        return False
+
+    return True
+
+
+async def generate_with_ollama(prompt: str, campaign: dict = None) -> dict:
+    wrapped_prompt = (
+        "Tu es un assistant de génération de landing page. "
+        "Réponds UNIQUEMENT avec un objet JSON valide, sans texte explicatif, sans markdown et sans HTML. "
+        "Le JSON doit contenir au minimum les sections : hero, problem_solution, program, social_proof, pricing, instructor.\n\n"
+        f"{prompt}"
+    )
+
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 f"{settings.ollama_base_url}/api/generate",
                 json={
                     "model": settings.ollama_model,
-                    "prompt": prompt,
+                    "prompt": wrapped_prompt,
                     "stream": False,
                     "options": {"temperature": 0.7, "num_predict": 2048},
                 },
@@ -72,9 +103,12 @@ async def generate_section_content(prompt: str, campaign: dict = None) -> dict:
 
         match = re.search(r"\{.*\}", cleaned_raw, re.DOTALL)
         if match:
-            return json.loads(match.group())
-
-        logger.warning("Ollama response didn't contain valid JSON structure. Using fallback.")
+            page_state = json.loads(match.group())
+            if validate_page_state(page_state):
+                return page_state
+            logger.warning("Ollama response JSON failed validation.")
+        else:
+            logger.warning("Ollama response didn't contain valid JSON structure. Using fallback.")
     except Exception as e:
         logger.warning(f"Ollama generation call failed ({e}). Utilizing copywriting fallback engine.")
 

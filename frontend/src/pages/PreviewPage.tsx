@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { generateLandingPage, getCampaign } from "../api/client";
 import ExportPanel from "../components/preview/ExportPanel";
 import LivePreview from "../components/preview/LivePreview";
+import ChatPanel from "../components/preview/ChatPanel";
 import Navbar from "../components/ui/Navbar";
 
 export default function PreviewPage() {
@@ -12,6 +13,8 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
 
   useEffect(() => {
     if (!id) return;
@@ -20,11 +23,13 @@ export default function PreviewPage() {
         if (campaign.formation?.name) {
           setCampaignName(campaign.formation.name);
         }
-        if (campaign.generated_html) {
+
+        if (campaign.generated_html && campaign.page_state) {
           setHtml(campaign.generated_html);
-        } else {
-          return generateLandingPage(id).then((res) => setHtml(res.html));
+          return;
         }
+
+        return generateLandingPage(id).then((res) => setHtml(res.html));
       })
       .catch(() => setError("Impossible de charger la landing page."))
       .finally(() => setLoading(false));
@@ -42,6 +47,14 @@ export default function PreviewPage() {
     } finally {
       setRegenerating(false);
     }
+  };
+
+  const handleToggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev);
+  };
+
+  const handleToggleChat = () => {
+    setChatOpen((prev) => !prev);
   };
 
   if (loading) {
@@ -62,8 +75,8 @@ export default function PreviewPage() {
   return (
     <div className="app-shell min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 py-6 px-4">
-        <div className="mx-auto max-w-6xl">
+      <main className={`flex-1 py-6 px-4 ${isFullscreen ? "bg-[#f6f4ef]" : ""}`}>
+        <div className={`mx-auto ${isFullscreen ? "max-w-full" : "max-w-6xl"}`}>
           <div className="app-surface mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm">
             <div>
               <Link to="/" className="coral-text inline-flex items-center gap-1 text-xs font-semibold hover:underline">
@@ -71,13 +84,29 @@ export default function PreviewPage() {
               </Link>
               <h1 className="app-title mt-1 text-xl font-bold">{campaignName}</h1>
             </div>
-            {id && (
-              <ExportPanel
-                campaignId={id}
-                onRegenerate={handleRegenerate}
-                loading={regenerating}
-              />
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleToggleChat}
+                className="btn-secondary inline-flex items-center gap-2"
+              >
+                {chatOpen ? "Masquer l'éditeur" : "Afficher l'éditeur"}
+              </button>
+              <button
+                type="button"
+                onClick={handleToggleFullscreen}
+                className="btn-secondary inline-flex items-center gap-2"
+              >
+                {isFullscreen ? "Quitter plein écran" : "Plein écran"}
+              </button>
+              {id && (
+                <ExportPanel
+                  campaignId={id}
+                  onRegenerate={handleRegenerate}
+                  loading={regenerating}
+                />
+              )}
+            </div>
           </div>
 
           {error && (
@@ -86,11 +115,23 @@ export default function PreviewPage() {
             </div>
           )}
 
-          {html ? (
-            <LivePreview html={html} />
-          ) : (
-            <p className="text-gray-500">Aucune page générée.</p>
-          )}
+          <div className={`grid gap-6 ${isFullscreen ? "lg:grid-cols-[3fr_1fr]" : "xl:grid-cols-[1.5fr_0.8fr]"}`}>
+            <div className={isFullscreen ? "min-h-[calc(100vh-160px)]" : ""}>
+              {html ? (
+                <LivePreview html={html} />
+              ) : (
+                <p className="text-gray-500">Aucune page générée.</p>
+              )}
+            </div>
+            {id && chatOpen ? (
+              <div className={isFullscreen ? "max-h-[calc(100vh-180px)] overflow-auto" : ""}>
+                <ChatPanel
+                  campaignId={id}
+                  onUpdateHtml={(updatedHtml) => setHtml(updatedHtml)}
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
       </main>
     </div>

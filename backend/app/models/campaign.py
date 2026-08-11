@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -43,6 +43,7 @@ class FormationInfo(BaseModel):
 
 class BrandingInfo(BaseModel):
     tone: str
+    ai_model: str = "ollama"
     primary_color: str = "#2563eb"
     secondary_color: str = "#1e40af"
     style: str
@@ -63,6 +64,7 @@ class CampaignCreate(BaseModel):
 class CampaignResponse(CampaignCreate):
     id: str
     generated_html: Optional[str] = None
+    page_state: Optional[dict[str, Any]] = None
     status: str = "draft"
     created_at: datetime
     updated_at: datetime

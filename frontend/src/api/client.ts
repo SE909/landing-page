@@ -28,6 +28,11 @@ export async function generateLandingPage(campaignId: string) {
   return res.data;
 }
 
+export async function chatCampaign(campaignId: string, instruction: string) {
+  const res = await api.post(`/campaigns/${campaignId}/chat`, { instruction });
+  return res.data;
+}
+
 export async function uploadImage(file: File) {
   const form = new FormData();
   form.append("file", file);

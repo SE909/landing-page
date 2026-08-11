@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.db.mongodb import close_db, connect_db
-from app.routes import campaigns, generate, upload, templates, export
+from app.routes import campaigns, generate, chatbot, upload, templates, export
 
 
 @asynccontextmanager
@@ -32,6 +32,7 @@ app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads"
 
 app.include_router(campaigns.router)
 app.include_router(generate.router)
+app.include_router(chatbot.router)
 app.include_router(upload.router)
 app.include_router(templates.router)
 app.include_router(export.router)
