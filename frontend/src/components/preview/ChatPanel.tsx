@@ -12,9 +12,10 @@ interface Message {
 }
 
 const SUGGESTIONS = [
+  "Que penses-tu de ma page ? Que faut-il améliorer ?",
+  "Pourquoi mon titre principal est-il faible ?",
   "Rends le titre principal plus percutant",
   "Change le texte du bouton en « Réserver ma place »",
-  "Réécris la section prix sur un ton plus rassurant",
 ];
 
 export default function ChatPanel({ campaignId, onHtmlUpdate }: Props) {
@@ -55,8 +56,10 @@ export default function ChatPanel({ campaignId, onHtmlUpdate }: Props) {
   return (
     <div className="flex h-full flex-col rounded-2xl border border-[#e7ddd0] bg-white shadow-sm">
       <div className="border-b border-[#e7ddd0] px-4 py-3">
-        <h2 className="app-title text-sm font-bold">💬 Assistant d'édition</h2>
-        <p className="text-xs text-gray-500">Demandez une modification, la page se met à jour.</p>
+        <h2 className="app-title text-sm font-bold">💬 Assistant de la page</h2>
+        <p className="text-xs text-gray-500">
+          Posez une question ou demandez une modification.
+        </p>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
@@ -86,7 +89,7 @@ export default function ChatPanel({ campaignId, onHtmlUpdate }: Props) {
             {message.content}
           </div>
         ))}
-        {loading && <p className="text-xs text-gray-500">L'assistant modifie la page...</p>}
+        {loading && <p className="text-xs text-gray-500">L'assistant réfléchit...</p>}
         {error && (
           <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
             {error}
@@ -104,7 +107,7 @@ export default function ChatPanel({ campaignId, onHtmlUpdate }: Props) {
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="Ex : raccourcis le sous-titre"
+          placeholder="Ex : pourquoi cette section ? ou raccourcis le sous-titre"
           className="flex-1 rounded-lg border border-[#e7ddd0] px-3 py-2 text-sm focus:outline-none"
         />
         <button

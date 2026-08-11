@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     # OpenAI is used only by the chatbot; generation stays on Ollama.
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
-    openai_model: str = "gpt-4o-mini"
+    openai_model: str = "gpt-4.1-mini"
     upload_dir: str = "uploads"
     cors_origins: str = "http://localhost:5173"
 

@@ -1,4 +1,8 @@
-"""Chatbot backed by the OpenAI API. It edits `page_state`, never HTML."""
+"""Chatbot backed by the OpenAI API.
+
+It both advises about the landing page and edits it. Edits go through the
+`apply_edits` tool and only ever touch `page_state`, never HTML.
+"""
 
 import json
 import logging
@@ -10,22 +14,58 @@ from app.services.page_state import SECTION_SCHEMA
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Tu es l'assistant d'édition d'une landing page de formation.
-Tu modifies UNIQUEMENT le `page_state` structuré fourni. Tu ne produis JAMAIS de HTML.
+SYSTEM_PROMPT = """Tu es le conseiller et l'éditeur d'une landing page de formation.
+Tu réponds en français, de manière concrète et concise.
 
-Réponds UNIQUEMENT avec un JSON de cette forme :
-{
-  "reply": "réponse courte en français à l'utilisateur",
-  "updates": {"<section_id>": {"<prop>": "nouvelle valeur"}},
-  "visibility": {"<section_id>": true|false}
-}
+Deux modes :
+1. Conseil : l'utilisateur pose une question ou demande un avis (« pourquoi mon titre est faible ? »,
+   « que manque-t-il à ma page ? », « que veut dire cette section ? »). Réponds simplement en texte,
+   en t'appuyant sur le `page_state` fourni. Propose des améliorations précises et demande si tu dois
+   les appliquer. N'appelle AUCUN outil dans ce cas.
+2. Édition : l'utilisateur demande un changement à l'impératif (« rends le titre plus percutant »,
+   « change le bouton en... », « raccourcis le sous-titre ») ou accepte une proposition. Appelle
+   IMMÉDIATEMENT l'outil `apply_edits` avec le nouveau texte. Ne te contente jamais de proposer une
+   formulation dans `reply` : si tu as trouvé la meilleure version, applique-la.
 
-Règles :
-- `updates` ne contient que les sections et propriétés réellement modifiées.
-- N'invente pas de nouvelles sections ni de nouvelles propriétés.
-- Les valeurs sont du texte brut (sauf `program.skills` qui est une liste de textes).
-- Si la demande ne nécessite aucune modification, renvoie `updates` et `visibility` vides et réponds dans `reply`.
+Règles d'édition :
+- Tu modifies UNIQUEMENT le `page_state` structuré fourni, jamais du HTML.
+- N'invente pas de sections ni de propriétés : respecte le schéma.
+- Les valeurs sont du texte brut (sauf `program.skills`, une liste de textes).
+- Une demande à l'impératif est une édition, pas une question. Ne conseille que si la demande est
+  vraiment une question ou trop vague pour deviner quelle propriété modifier.
 """
+
+APPLY_EDITS_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "apply_edits",
+        "description": (
+            "Applique des modifications au page_state de la landing page. "
+            "À n'utiliser que lorsque l'utilisateur demande un changement."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "reply": {
+                    "type": "string",
+                    "description": "Phrase en français expliquant ce qui a été modifié.",
+                },
+                "updates": {
+                    "type": "object",
+                    "description": (
+                        "Objet {section_id: {propriété: nouvelle valeur}} limité aux "
+                        "propriétés réellement modifiées."
+                    ),
+                },
+                "visibility": {
+                    "type": "object",
+                    "description": "Objet {section_id: bool} pour masquer ou afficher une section.",
+                },
+            },
+            "required": ["reply", "updates"],
+        },
+    },
+}
 
 
 class OpenAIError(RuntimeError):
@@ -36,10 +76,30 @@ def _schema_description() -> str:
     return json.dumps(SECTION_SCHEMA, ensure_ascii=False)
 
 
+def _parse_tool_call(choice: dict) -> dict:
+    """Turn the assistant message into `{reply, updates, visibility}`."""
+    assistant = choice.get("message", {})
+    text = str(assistant.get("content") or "").strip()
+    tool_calls = assistant.get("tool_calls") or []
+    if not tool_calls:
+        return {"reply": text, "updates": {}, "visibility": {}}
+
+    try:
+        args = json.loads(tool_calls[0]["function"]["arguments"] or "{}")
+    except json.JSONDecodeError as exc:
+        raise OpenAIError("Arguments d'édition OpenAI invalides.") from exc
+
+    return {
+        "reply": str(args.get("reply") or text).strip(),
+        "updates": args.get("updates") if isinstance(args.get("updates"), dict) else {},
+        "visibility": args.get("visibility") if isinstance(args.get("visibility"), dict) else {},
+    }
+
+
 async def edit_page_state(
     message: str, page_state: dict, history: list[dict] | None = None
 ) -> dict:
-    """Ask OpenAI for structured edits. Returns `{reply, updates, visibility}`."""
+    """Answer a question about the page, or edit it. Returns `{reply, updates, visibility}`."""
     if not settings.openai_api_key:
         raise OpenAIError(
             "Clé OpenAI manquante : définissez OPENAI_API_KEY dans le fichier .env du backend."
@@ -71,11 +131,12 @@ async def edit_page_state(
                     "model": settings.openai_model,
                     "messages": messages,
                     "temperature": 0.3,
-                    "response_format": {"type": "json_object"},
+                    "tools": [APPLY_EDITS_TOOL],
+                    "tool_choice": "auto",
                 },
             )
             response.raise_for_status()
-            content = response.json()["choices"][0]["message"]["content"]
+            choice = response.json()["choices"][0]
     except httpx.HTTPStatusError as exc:
         logger.warning("OpenAI HTTP error: %s", exc.response.text[:500])
         raise OpenAIError(f"Erreur OpenAI ({exc.response.status_code}).") from exc
@@ -83,13 +144,4 @@ async def edit_page_state(
         logger.warning("OpenAI call failed: %s", exc)
         raise OpenAIError("Impossible de contacter OpenAI.") from exc
 
-    try:
-        parsed = json.loads(content)
-    except json.JSONDecodeError as exc:
-        raise OpenAIError("Réponse OpenAI invalide (JSON attendu).") from exc
-
-    return {
-        "reply": str(parsed.get("reply") or "").strip(),
-        "updates": parsed.get("updates") if isinstance(parsed.get("updates"), dict) else {},
-        "visibility": parsed.get("visibility") if isinstance(parsed.get("visibility"), dict) else {},
-    }
+    return _parse_tool_call(choice)

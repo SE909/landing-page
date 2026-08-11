@@ -35,17 +35,23 @@ npm run dev
 
 Ouvrir http://localhost:5173
 
-## Chatbot d'édition (OpenAI)
+## Chatbot de la page (OpenAI)
 
-La génération reste sur Ollama. Le chatbot de l'écran d'aperçu utilise OpenAI pour modifier le
-`page_state` structuré ; le HTML est ensuite réassemblé par le template.
+La génération reste sur Ollama. Le chatbot de l'écran d'aperçu utilise OpenAI et sait :
+
+- répondre aux questions sur la page (conseils, critiques, explications d'une section) sans rien modifier ;
+- appliquer une modification, via l'outil `apply_edits`, qui ne touche que le `page_state` structuré ;
+  le HTML est ensuite réassemblé par le template.
 
 Dans `backend/.env` :
 
 ```env
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o-mini
+OPENAI_MODEL=gpt-4.1-mini
 ```
+
+Modèles possibles : `gpt-4o-mini` (le moins cher), `gpt-4.1-mini` (défaut, meilleur raisonnement),
+`gpt-4o` / `gpt-4.1` (les plus pertinents pour le copywriting et les conseils).
 
 ## Changer de modèle Ollama
 

@@ -20,12 +20,34 @@ from tests.test_generate_route import FakeCollection
 from tests.test_page_state import CAMPAIGN
 
 NEW_TITLE = "Un titre bien plus percutant"
+ADVICE = "Votre titre est vague : il ne dit pas à qui s'adresse la formation."
 openai_reply = {
     "reply": "J'ai reformulé le titre principal.",
     "updates": {"hero": {"title": NEW_TITLE}, "unknown": {"x": "y"}},
     "visibility": {},
 }
+use_tool = True
 last_request: dict = {}
+
+
+def openai_message() -> dict:
+    """Either an `apply_edits` tool call (edit mode) or plain text (advice mode)."""
+    if not use_tool:
+        return {"role": "assistant", "content": ADVICE}
+    return {
+        "role": "assistant",
+        "content": None,
+        "tool_calls": [
+            {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                    "name": "apply_edits",
+                    "arguments": json.dumps(openai_reply),
+                },
+            }
+        ],
+    }
 
 
 class FakeOpenAIHandler(BaseHTTPRequestHandler):
@@ -33,11 +55,9 @@ class FakeOpenAIHandler(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         assert self.path == "/chat/completions"
         assert self.headers["Authorization"] == "Bearer test-key"
-        assert body["response_format"] == {"type": "json_object"}
+        assert body["tools"][0]["function"]["name"] == "apply_edits"
         last_request.update(body)
-        payload = json.dumps(
-            {"choices": [{"message": {"content": json.dumps(openai_reply)}}]}
-        ).encode()
+        payload = json.dumps({"choices": [{"message": openai_message()}]}).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
@@ -88,15 +108,18 @@ async def main():
     assert res.json()["page_state"]["sections"][0]["props"]["title"] == NEW_TITLE
     print("chat rebuilds a missing page_state: OK")
 
-    # 3. no-op answer keeps the page untouched
-    openai_reply["updates"] = {}
+    # 3. a question is answered without touching the page
+    global use_tool
+    use_tool = False
     previous_html = collection.doc["generated_html"]
     client, collection = make_app({"_id": ObjectId(), **CAMPAIGN, "page_state": page_state, "generated_html": previous_html})
     async with client:
-        res = await client.post(f"/api/campaigns/{collection.doc['_id']}/chat", json={"message": "bonjour"})
-    assert res.json()["changed"] == [] and res.json()["html"] is None
+        res = await client.post(f"/api/campaigns/{collection.doc['_id']}/chat", json={"message": "pourquoi mon titre est faible ?"})
+    body = res.json()
+    assert body["reply"] == ADVICE and body["changed"] == [] and body["html"] is None
     assert collection.doc["generated_html"] == previous_html
-    print("chat no-op leaves the page unchanged: OK")
+    print("chat answers a question without editing the page: OK")
+    use_tool = True
 
     # 4. missing API key surfaces a clear error
     settings.openai_api_key = ""
