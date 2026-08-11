@@ -37,6 +37,7 @@ export interface FormationInfo {
 
 export interface BrandingInfo {
   tone: string;
+  ai_model: "ollama" | "gpt-5";
   primary_color: string;
   secondary_color: string;
   style: string;
@@ -80,6 +81,7 @@ export const defaultFormData: CampaignFormData = {
   },
   branding: {
     tone: "Professionnel",
+    ai_model: "ollama",
     primary_color: "#2563eb",
     secondary_color: "#1e40af",
     style: "Moderne",
@@ -137,6 +139,7 @@ export const sampleFormData: CampaignFormData = {
   },
   branding: {
     tone: "Inspirant",
+    ai_model: "ollama",
     primary_color: "#2563eb",
     secondary_color: "#4f46e5",
     style: "Moderne",

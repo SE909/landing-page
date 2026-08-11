@@ -6,6 +6,10 @@ interface Props {
 }
 
 const TONES = ["Professionnel", "Amical", "Urgent", "Inspirant"];
+const MODELS = [
+  { value: "ollama", label: "Ollama (Local)" },
+  { value: "gpt-5", label: "GPT-5" },
+];
 const STYLES = ["Moderne", "Classique", "Minimaliste"];
 
 export default function StepBranding({ data, onChange }: Props) {
@@ -22,6 +26,20 @@ export default function StepBranding({ data, onChange }: Props) {
           >
             {TONES.map((t) => (
               <option key={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label-field">Modèle IA</label>
+          <select
+            className="input-field"
+            value={data.ai_model}
+            onChange={(e) => onChange({ ...data, ai_model: e.target.value as BrandingInfo["ai_model"] })}
+          >
+            {MODELS.map((model) => (
+              <option key={model.value} value={model.value}>
+                {model.label}
+              </option>
             ))}
           </select>
         </div>
