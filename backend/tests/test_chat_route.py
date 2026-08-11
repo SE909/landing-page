@@ -163,6 +163,16 @@ async def main():
     assert collection.doc["generated_html"] == html
     print("chat refuses image requests without calling OpenAI: OK")
 
+    # 5b. a text edit that merely mentions an image is still handled
+    client, collection = make_app({"_id": ObjectId(), **CAMPAIGN, "page_state": page_state, "generated_html": html})
+    async with client:
+        res = await client.post(
+            f"/api/campaigns/{collection.doc['_id']}/chat",
+            json={"message": "raccourcis le sous-titre sous la photo"},
+        )
+    assert res.json()["changed"] == ["hero.title"], res.text
+    print("a text edit mentioning an image is not refused: OK")
+
     # 6. edits filtered out by the schema are reported as such, not claimed as done
     openai_reply["updates"] = {"hero": {"image": "photo.png"}}
     client, collection = make_app({"_id": ObjectId(), **CAMPAIGN, "page_state": page_state, "generated_html": html})
