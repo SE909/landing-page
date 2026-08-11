@@ -149,7 +149,36 @@ async def main():
 
     openai_reply["updates"] = {"hero": {"title": NEW_TITLE}, "unknown": {"x": "y"}}
 
-    # 5. missing API key surfaces a clear error
+    # 5. an image request is refused without calling OpenAI
+    last_request.clear()
+    client, collection = make_app({"_id": ObjectId(), **CAMPAIGN, "page_state": page_state, "generated_html": html})
+    async with client:
+        res = await client.post(
+            f"/api/campaigns/{collection.doc['_id']}/chat",
+            json={"message": "change la photo du formateur"},
+        )
+    body = res.json()
+    assert body["changed"] == [] and body["html"] is None and "upload" in body["reply"]
+    assert last_request == {}, "OpenAI must not be called for an image request"
+    assert collection.doc["generated_html"] == html
+    print("chat refuses image requests without calling OpenAI: OK")
+
+    # 6. edits filtered out by the schema are reported as such, not claimed as done
+    openai_reply["updates"] = {"hero": {"image": "photo.png"}}
+    client, collection = make_app({"_id": ObjectId(), **CAMPAIGN, "page_state": page_state, "generated_html": html})
+    async with client:
+        res = await client.post(
+            f"/api/campaigns/{collection.doc['_id']}/chat",
+            json={"message": "mets un autre visuel en haut de page", "skill_id": "translate_en"},
+        )
+    body = res.json()
+    assert body["changed"] == [] and body["html"] is None
+    assert "aucune modification" in body["reply"]
+    assert collection.doc["generated_html"] == html
+    print("a skill that changes nothing says so: OK")
+    openai_reply["updates"] = {"hero": {"title": NEW_TITLE}, "unknown": {"x": "y"}}
+
+    # 7. missing API key surfaces a clear error
     settings.openai_api_key = ""
     client, collection = make_app({"_id": ObjectId(), **CAMPAIGN, "page_state": page_state, "generated_html": html})
     async with client:

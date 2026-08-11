@@ -33,6 +33,8 @@ Règles d'édition :
 - Les valeurs sont du texte brut (sauf `program.skills`, une liste de textes).
 - Une demande à l'impératif est une édition, pas une question. Ne conseille que si la demande est
   vraiment une question ou trop vague pour deviner quelle propriété modifier.
+- Les images (photo du formateur, logo) ne sont pas éditables : elles ne font pas partie du
+  `page_state`. Explique-le au lieu de modifier un texte à la place.
 """
 
 APPLY_EDITS_TOOL = {

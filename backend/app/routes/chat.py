@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.db.mongodb import get_campaigns_collection
 from app.services.generation import generate_page, render_html
+from app.services.intent import IMAGE_REQUEST_REPLY, is_image_request
 from app.services.openai_service import OpenAIError, edit_page_state
 from app.services.page_state import apply_updates
 from app.services.skills import SKILLS, Skill, get_skill
@@ -52,6 +53,13 @@ async def chat_edit(campaign_id: str, body: ChatRequest):
     if not doc:
         raise HTTPException(404, "Campagne introuvable")
 
+    if not skill and is_image_request(body.message):
+        return ChatResponse(
+            reply=IMAGE_REQUEST_REPLY,
+            changed=[],
+            page_state=doc.get("page_state") or {},
+        )
+
     campaign = {k: v for k, v in doc.items() if k != "_id"}
     page_state = doc.get("page_state")
     if not page_state:
@@ -76,7 +84,11 @@ async def chat_edit(campaign_id: str, body: ChatRequest):
     if skill and skill.language and changed:
         updated_state["meta"] = {**updated_state.get("meta", {}), "language": skill.language}
     if not changed:
-        return ChatResponse(reply=result["reply"], changed=[], page_state=page_state)
+        # Say so instead of letting the model claim a change that was filtered out.
+        reply = result["reply"] or "Je n'ai rien modifié sur la page."
+        if skill:
+            reply = f"{skill.label} : aucune modification n'a pu être appliquée à la page."
+        return ChatResponse(reply=reply, changed=[], page_state=page_state)
 
     html = render_html(campaign, updated_state)
     await col.update_one(
