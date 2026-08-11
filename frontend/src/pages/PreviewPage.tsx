@@ -13,7 +13,6 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState("");
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
 
   useEffect(() => {
@@ -49,10 +48,6 @@ export default function PreviewPage() {
     }
   };
 
-  const handleToggleFullscreen = () => {
-    setIsFullscreen((prev) => !prev);
-  };
-
   const handleToggleChat = () => {
     setChatOpen((prev) => !prev);
   };
@@ -75,8 +70,8 @@ export default function PreviewPage() {
   return (
     <div className="app-shell min-h-screen flex flex-col">
       <Navbar />
-      <main className={`flex-1 py-6 px-4 ${isFullscreen ? "bg-[#f6f4ef]" : ""}`}>
-        <div className={`mx-auto ${isFullscreen ? "max-w-full" : "max-w-6xl"}`}>
+      <main className="flex-1 py-6 px-4">
+        <div className="mx-auto max-w-6xl">
           <div className="app-surface mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 shadow-sm">
             <div>
               <Link to="/" className="coral-text inline-flex items-center gap-1 text-xs font-semibold hover:underline">
@@ -91,13 +86,6 @@ export default function PreviewPage() {
                 className="btn-secondary inline-flex items-center gap-2"
               >
                 {chatOpen ? "Masquer l'éditeur" : "Afficher l'éditeur"}
-              </button>
-              <button
-                type="button"
-                onClick={handleToggleFullscreen}
-                className="btn-secondary inline-flex items-center gap-2"
-              >
-                {isFullscreen ? "Quitter plein écran" : "Plein écran"}
               </button>
               {id && (
                 <ExportPanel
@@ -118,7 +106,7 @@ export default function PreviewPage() {
           {html ? (
             <LivePreview
               html={html}
-              aside={id && <ChatPanel campaignId={id} onHtmlUpdate={setHtml} />}
+              aside={chatOpen && id && <ChatPanel campaignId={id} onHtmlUpdate={setHtml} />}
             />
           ) : (
             <p className="text-gray-500">Aucune page générée.</p>
