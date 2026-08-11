@@ -33,6 +33,7 @@ app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads"
 app.include_router(campaigns.router)
 app.include_router(generate.router)
 app.include_router(chat.router)
+app.include_router(chat.skills_router)
 app.include_router(upload.router)
 app.include_router(templates.router)
 app.include_router(export.router)

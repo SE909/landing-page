@@ -68,6 +68,12 @@ class FakeOpenAIHandler(BaseHTTPRequestHandler):
         pass
 
 
+def skills_app():
+    app = FastAPI()
+    app.include_router(chat_route.skills_router)
+    return app
+
+
 def make_app(doc):
     collection = FakeCollection(doc)
     chat_route.get_campaigns_collection = lambda: collection
@@ -121,7 +127,29 @@ async def main():
     print("chat answers a question without editing the page: OK")
     use_tool = True
 
-    # 4. missing API key surfaces a clear error
+    # 4. a skill sends its own prompt and forces an edit
+    openai_reply["updates"] = {"hero": {"title": "A much stronger headline"}}
+    client, collection = make_app({"_id": ObjectId(), **CAMPAIGN, "page_state": page_state, "generated_html": html})
+    async with client:
+        res = await client.post(
+            f"/api/campaigns/{collection.doc['_id']}/chat",
+            json={"message": "", "skill_id": "translate_en"},
+        )
+    body = res.json()
+    assert body["changed"] == ["hero.title"]
+    assert body["page_state"]["meta"]["language"] == "en"
+    assert last_request["tool_choice"] == {"type": "function", "function": {"name": "apply_edits"}}
+    assert "Traduis en anglais" in last_request["messages"][-1]["content"]
+    print("skill forces an edit with its own prompt: OK")
+
+    async with AsyncClient(transport=ASGITransport(app=skills_app()), base_url="http://test") as c:
+        listed = (await c.get("/api/skills")).json()
+    assert [s["id"] for s in listed] == ["translate_en"]
+    print("skills are listed: OK")
+
+    openai_reply["updates"] = {"hero": {"title": NEW_TITLE}, "unknown": {"x": "y"}}
+
+    # 5. missing API key surfaces a clear error
     settings.openai_api_key = ""
     client, collection = make_app({"_id": ObjectId(), **CAMPAIGN, "page_state": page_state, "generated_html": html})
     async with client:

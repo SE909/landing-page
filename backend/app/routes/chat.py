@@ -9,8 +9,15 @@ from app.db.mongodb import get_campaigns_collection
 from app.services.generation import generate_page, render_html
 from app.services.openai_service import OpenAIError, edit_page_state
 from app.services.page_state import apply_updates
+from app.services.skills import SKILLS, Skill, get_skill
 
 router = APIRouter(prefix="/api/campaigns", tags=["chat"])
+skills_router = APIRouter(prefix="/api/skills", tags=["skills"])
+
+
+@skills_router.get("", response_model=list[Skill])
+async def list_skills():
+    return SKILLS
 
 
 class ChatMessage(BaseModel):
@@ -21,6 +28,8 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
+    # When set, the message is replaced by the skill's prompt and an edit is forced.
+    skill_id: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -32,7 +41,10 @@ class ChatResponse(BaseModel):
 
 @router.post("/{campaign_id}/chat", response_model=ChatResponse)
 async def chat_edit(campaign_id: str, body: ChatRequest):
-    if not body.message.strip():
+    skill = get_skill(body.skill_id) if body.skill_id else None
+    if body.skill_id and not skill:
+        raise HTTPException(404, "Skill inconnu")
+    if not skill and not body.message.strip():
         raise HTTPException(400, "Message vide")
 
     col = get_campaigns_collection()
@@ -52,12 +64,17 @@ async def chat_edit(campaign_id: str, body: ChatRequest):
 
     try:
         result = await edit_page_state(
-            body.message, page_state, [m.model_dump() for m in body.history]
+            skill.prompt if skill else body.message,
+            page_state,
+            [] if skill else [m.model_dump() for m in body.history],
+            force_edit=skill is not None,
         )
     except OpenAIError as exc:
         raise HTTPException(502, str(exc)) from exc
 
     updated_state, changed = apply_updates(page_state, result["updates"], result["visibility"])
+    if skill and skill.language and changed:
+        updated_state["meta"] = {**updated_state.get("meta", {}), "language": skill.language}
     if not changed:
         return ChatResponse(reply=result["reply"], changed=[], page_state=page_state)
 

@@ -53,6 +53,17 @@ OPENAI_MODEL=gpt-4.1-mini
 Modèles possibles : `gpt-4o-mini` (le moins cher), `gpt-4.1-mini` (défaut, meilleur raisonnement),
 `gpt-4o` / `gpt-4.1` (les plus pertinents pour le copywriting et les conseils).
 
+## Skills
+
+Un skill est une réécriture complète de la page en un clic, affichée sous forme de bouton dans
+l'assistant. Techniquement, c'est un prompt enregistré envoyé au même outil `apply_edits` : il ne
+peut donc modifier que des propriétés connues du `page_state`.
+
+Skill disponible : **🇬🇧 Traduire en anglais**.
+
+Pour en ajouter un, il suffit d'une entrée dans `SKILLS` (`backend/app/services/skills.py`) ; le
+bouton apparaît automatiquement (`GET /api/skills`).
+
 ## Changer de modèle Ollama
 
 Dans `backend/.env` :
