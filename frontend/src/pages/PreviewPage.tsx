@@ -13,6 +13,7 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState("");
+  const [chatOpen, setChatOpen] = useState(true);
 
   useEffect(() => {
     if (!id) return;
@@ -21,11 +22,13 @@ export default function PreviewPage() {
         if (campaign.formation?.name) {
           setCampaignName(campaign.formation.name);
         }
-        if (campaign.generated_html) {
+
+        if (campaign.generated_html && campaign.page_state) {
           setHtml(campaign.generated_html);
-        } else {
-          return generateLandingPage(id).then((res) => setHtml(res.html));
+          return;
         }
+
+        return generateLandingPage(id).then((res) => setHtml(res.html));
       })
       .catch(() => setError("Impossible de charger la landing page."))
       .finally(() => setLoading(false));
@@ -43,6 +46,10 @@ export default function PreviewPage() {
     } finally {
       setRegenerating(false);
     }
+  };
+
+  const handleToggleChat = () => {
+    setChatOpen((prev) => !prev);
   };
 
   if (loading) {
@@ -72,13 +79,22 @@ export default function PreviewPage() {
               </Link>
               <h1 className="app-title mt-1 text-xl font-bold">{campaignName}</h1>
             </div>
-            {id && (
-              <ExportPanel
-                campaignId={id}
-                onRegenerate={handleRegenerate}
-                loading={regenerating}
-              />
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleToggleChat}
+                className="btn-secondary inline-flex items-center gap-2"
+              >
+                {chatOpen ? "Masquer l'éditeur" : "Afficher l'éditeur"}
+              </button>
+              {id && (
+                <ExportPanel
+                  campaignId={id}
+                  onRegenerate={handleRegenerate}
+                  loading={regenerating}
+                />
+              )}
+            </div>
           </div>
 
           {error && (
@@ -90,7 +106,7 @@ export default function PreviewPage() {
           {html ? (
             <LivePreview
               html={html}
-              aside={id && <ChatPanel campaignId={id} onHtmlUpdate={setHtml} />}
+              aside={chatOpen && id && <ChatPanel campaignId={id} onHtmlUpdate={setHtml} />}
             />
           ) : (
             <p className="text-gray-500">Aucune page générée.</p>

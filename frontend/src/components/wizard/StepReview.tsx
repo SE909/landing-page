@@ -28,8 +28,9 @@ export default function StepReview({ data }: Props) {
         </div>
         <div className="rounded-xl border border-[#e7ddd0] bg-[#fffaf6] p-4">
           <h3 className="mb-2 font-semibold text-gray-700">Branding</h3>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
             <span>Ton : {data.branding.tone}</span>
+            <span>Modèle IA : {data.branding.ai_model === "ollama" ? "Ollama (Local)" : "GPT-5"}</span>
             <span
               className="inline-block h-5 w-5 rounded-full"
               style={{ background: data.branding.primary_color }}
