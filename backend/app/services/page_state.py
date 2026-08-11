@@ -107,6 +107,43 @@ def build_page_state(campaign: dict, raw_content: dict) -> dict:
     }
 
 
+def apply_updates(
+    page_state: dict, updates: dict, visibility: dict | None = None
+) -> tuple[dict, list[str]]:
+    """Apply `{section_id: {prop: value}}` edits to a page_state.
+
+    Unknown sections/props and empty values are ignored, so a bad LLM answer can
+    never corrupt the page. Returns the new page_state and the changed props
+    as `"section.prop"` / `"section.visible"` labels.
+    """
+    updates = updates if isinstance(updates, dict) else {}
+    visibility = visibility if isinstance(visibility, dict) else {}
+    changed: list[str] = []
+    sections = []
+
+    for section in page_state.get("sections", []):
+        section_id = section.get("id")
+        props = dict(section.get("props", {}))
+        visible = bool(section.get("visible", True))
+
+        for name, value in (updates.get(section_id) or {}).items():
+            if name not in SECTION_SCHEMA.get(section_id, {}):
+                continue
+            cleaned = _clean_props(section_id, {name: value}, props)[name]
+            if cleaned and cleaned != props.get(name):
+                props[name] = cleaned
+                changed.append(f"{section_id}.{name}")
+
+        if section_id in visibility and isinstance(visibility[section_id], bool):
+            if visibility[section_id] != visible:
+                visible = visibility[section_id]
+                changed.append(f"{section_id}.visible")
+
+        sections.append({**section, "props": props, "visible": visible})
+
+    return {**page_state, "sections": sections}, changed
+
+
 def page_state_to_content(page_state: dict) -> dict:
     """Flatten a page_state into the `ai_content` dict expected by the assembler."""
     return {

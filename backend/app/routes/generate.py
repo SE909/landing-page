@@ -5,11 +5,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 
 from app.db.mongodb import get_campaigns_collection
-from app.services.html_assembler import assemble_html
-from app.services.html_validator import validate_and_clean_html
-from app.services.ollama_service import generate_section_content
-from app.services.page_state import build_page_state, page_state_to_content
-from app.services.prompt_builder import build_content_prompt
+from app.services.generation import generate_page
 
 router = APIRouter(prefix="/api/campaigns", tags=["generate"])
 
@@ -22,11 +18,7 @@ async def generate_landing_page(campaign_id: str):
         raise HTTPException(404, "Campagne introuvable")
 
     campaign = {k: v for k, v in doc.items() if k != "_id"}
-    prompt = build_content_prompt(campaign)
-    raw_content = await generate_section_content(prompt, campaign=campaign)
-    page_state = build_page_state(campaign, raw_content)
-    raw_html = assemble_html(campaign, page_state_to_content(page_state))
-    html = validate_and_clean_html(raw_html)
+    page_state, html = await generate_page(campaign)
 
     await col.update_one(
         {"_id": ObjectId(campaign_id)},

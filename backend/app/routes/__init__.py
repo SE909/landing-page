@@ -1,3 +1,3 @@
-from . import campaigns, generate, upload, templates, export, chatbot
+from . import campaigns, chat, generate, upload, templates, export
 
-__all__ = ["campaigns", "generate", "chatbot", "upload", "templates", "export"]
+__all__ = ["campaigns", "chat", "generate", "upload", "templates", "export"]

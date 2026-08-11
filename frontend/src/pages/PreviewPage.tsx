@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { generateLandingPage, getCampaign } from "../api/client";
+import ChatPanel from "../components/preview/ChatPanel";
 import ExportPanel from "../components/preview/ExportPanel";
 import LivePreview from "../components/preview/LivePreview";
-import ChatPanel from "../components/preview/ChatPanel";
 import Navbar from "../components/ui/Navbar";
 
 export default function PreviewPage() {
@@ -115,23 +115,14 @@ export default function PreviewPage() {
             </div>
           )}
 
-          <div className={`grid gap-6 ${isFullscreen ? "lg:grid-cols-[3fr_1fr]" : "xl:grid-cols-[1.5fr_0.8fr]"}`}>
-            <div className={isFullscreen ? "min-h-[calc(100vh-160px)]" : ""}>
-              {html ? (
-                <LivePreview html={html} />
-              ) : (
-                <p className="text-gray-500">Aucune page générée.</p>
-              )}
+          {html ? (
+            <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
+              <LivePreview html={html} />
+              {id && <ChatPanel campaignId={id} onHtmlUpdate={setHtml} />}
             </div>
-            {id && chatOpen ? (
-              <div className={isFullscreen ? "max-h-[calc(100vh-180px)] overflow-auto" : ""}>
-                <ChatPanel
-                  campaignId={id}
-                  onUpdateHtml={(updatedHtml) => setHtml(updatedHtml)}
-                />
-              </div>
-            ) : null}
-          </div>
+          ) : (
+            <p className="text-gray-500">Aucune page générée.</p>
+          )}
         </div>
       </main>
     </div>

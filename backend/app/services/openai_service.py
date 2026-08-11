@@ -1,58 +1,95 @@
-import httpx
+"""Chatbot backed by the OpenAI API. It edits `page_state`, never HTML."""
+
 import json
 import logging
-import re
+
+import httpx
 
 from app.config import settings
+from app.services.page_state import SECTION_SCHEMA
 
 logger = logging.getLogger(__name__)
 
+SYSTEM_PROMPT = """Tu es l'assistant d'édition d'une landing page de formation.
+Tu modifies UNIQUEMENT le `page_state` structuré fourni. Tu ne produis JAMAIS de HTML.
 
-class OpenAIConfigurationError(ValueError):
+Réponds UNIQUEMENT avec un JSON de cette forme :
+{
+  "reply": "réponse courte en français à l'utilisateur",
+  "updates": {"<section_id>": {"<prop>": "nouvelle valeur"}},
+  "visibility": {"<section_id>": true|false}
+}
+
+Règles :
+- `updates` ne contient que les sections et propriétés réellement modifiées.
+- N'invente pas de nouvelles sections ni de nouvelles propriétés.
+- Les valeurs sont du texte brut (sauf `program.skills` qui est une liste de textes).
+- Si la demande ne nécessite aucune modification, renvoie `updates` et `visibility` vides et réponds dans `reply`.
+"""
+
+
+class OpenAIError(RuntimeError):
     pass
 
 
-class OpenAIServiceError(ValueError):
-    pass
+def _schema_description() -> str:
+    return json.dumps(SECTION_SCHEMA, ensure_ascii=False)
 
 
-async def generate_with_openai(payload: dict, campaign: dict = None) -> dict:
+async def edit_page_state(
+    message: str, page_state: dict, history: list[dict] | None = None
+) -> dict:
+    """Ask OpenAI for structured edits. Returns `{reply, updates, visibility}`."""
     if not settings.openai_api_key:
-        raise OpenAIConfigurationError(
-            "OpenAI API key is required for the chatbot. Set OPENAI_API_KEY in the backend environment or .env file."
+        raise OpenAIError(
+            "Clé OpenAI manquante : définissez OPENAI_API_KEY dans le fichier .env du backend."
         )
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {
+            "role": "system",
+            "content": (
+                f"Schéma des sections (section_id -> propriétés) : {_schema_description()}\n"
+                f"page_state actuel : {json.dumps(page_state, ensure_ascii=False)}"
+            ),
+        },
+    ]
+    for entry in history or []:
+        role = entry.get("role")
+        content = entry.get("content")
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": str(content)})
+    messages.append({"role": "user", "content": message})
 
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 f"{settings.openai_base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {settings.openai_api_key}",
-                    "Content-Type": "application/json",
+                headers={"Authorization": f"Bearer {settings.openai_api_key}"},
+                json={
+                    "model": settings.openai_model,
+                    "messages": messages,
+                    "temperature": 0.3,
+                    "response_format": {"type": "json_object"},
                 },
-                json=payload,
             )
             response.raise_for_status()
-            data = response.json()
-            raw = data["choices"][0]["message"]["content"]
+            content = response.json()["choices"][0]["message"]["content"]
+    except httpx.HTTPStatusError as exc:
+        logger.warning("OpenAI HTTP error: %s", exc.response.text[:500])
+        raise OpenAIError(f"Erreur OpenAI ({exc.response.status_code}).") from exc
+    except Exception as exc:
+        logger.warning("OpenAI call failed: %s", exc)
+        raise OpenAIError("Impossible de contacter OpenAI.") from exc
 
-        cleaned_raw = re.sub(r"```json\s*", "", raw)
-        cleaned_raw = re.sub(r"```\s*", "", cleaned_raw).strip()
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise OpenAIError("Réponse OpenAI invalide (JSON attendu).") from exc
 
-        match = re.search(r"\{.*\}", cleaned_raw, re.DOTALL)
-        if match:
-            return json.loads(match.group())
-
-        raise OpenAIServiceError(f"OpenAI response ne contient pas de JSON valide : {cleaned_raw}")
-    except httpx.HTTPStatusError as e:
-        body = e.response.text if e.response is not None else str(e)
-        logger.warning(f"OpenAI generation HTTP error ({e.response.status_code}): {body}")
-        raise OpenAIServiceError(f"OpenAI HTTP error: {body}")
-    except json.JSONDecodeError as e:
-        logger.warning(f"OpenAI JSON decode failed: {e}")
-        raise OpenAIServiceError("Impossible d’analyser la réponse JSON d’OpenAI.")
-    except OpenAIConfigurationError:
-        raise
-    except Exception as e:
-        logger.warning(f"OpenAI generation call failed ({e}).")
-        raise OpenAIServiceError(f"Erreur OpenAI : {e}")
+    return {
+        "reply": str(parsed.get("reply") or "").strip(),
+        "updates": parsed.get("updates") if isinstance(parsed.get("updates"), dict) else {},
+        "visibility": parsed.get("visibility") if isinstance(parsed.get("visibility"), dict) else {},
+    }

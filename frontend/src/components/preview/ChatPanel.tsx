@@ -1,187 +1,120 @@
 import { useState } from "react";
-import { chatCampaign } from "../../api/client";
+import { chatEditPage } from "../../api/client";
 
-interface ChatPanelProps {
+interface Props {
   campaignId: string;
-  onUpdateHtml: (html: string) => void;
+  onHtmlUpdate: (html: string) => void;
 }
 
-type HistoryItem = {
+interface Message {
   role: "user" | "assistant";
-  text: string;
-};
-
-type PanelContentProps = {
-  instruction: string;
-  setInstruction: (value: string) => void;
-  handleSubmit: () => Promise<void>;
-  loading: boolean;
-  error: string;
-  history: HistoryItem[];
-};
-
-function PanelContent({ instruction, setInstruction, handleSubmit, loading, error, history }: PanelContentProps) {
-  return (
-    <div className="rounded-3xl border border-[#e7ddd0] bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold">Assistant de modification IA</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Donnez une instruction pour ajuster le contenu de la page et voir l'aperçu se mettre à jour.
-          </p>
-        </div>
-        <span className="rounded-full bg-[#f6f2ed] px-3 py-1 text-xs font-medium text-[#7b6a53]">
-          En direct après génération
-        </span>
-      </div>
-
-      <div className="mb-4">
-        <textarea
-          rows={3}
-          value={instruction}
-          onChange={(e) => setInstruction(e.target.value)}
-          placeholder="Par exemple : Augmente la pression avec un appel à l'action plus urgent."
-          className="input-field min-h-[110px] w-full rounded-2xl border border-[#e7ddd0] bg-[#f9f7f2] p-4 text-sm outline-none transition focus:border-[#e8734a] focus:ring-2 focus:ring-[#e8734a]/10"
-        />
-      </div>
-
-      {error ? (
-        <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-100">
-          {error}
-        </div>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={loading || !instruction.trim()}
-          className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
-        >
-          {loading ? "Application en cours..." : "Appliquer à la page"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setInstruction("")}
-          className="btn-secondary inline-flex items-center gap-2"
-        >
-          Effacer
-        </button>
-      </div>
-
-      <div className="mt-6 space-y-4">
-        {history.length > 0 && (
-          <div className="rounded-3xl border border-[#e7ddd0] bg-[#f9f7f2] p-4">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Historique des instructions</h3>
-            <div className="space-y-3">
-              {history.map((entry, index) => (
-                <div key={index} className={entry.role === "user" ? "rounded-2xl bg-white p-3 shadow-sm" : "rounded-2xl bg-[#fff8ed] p-3 shadow-sm"}>
-                  <div className="mb-1 text-[11px] uppercase tracking-[0.12em] text-slate-500">
-                    {entry.role === "user" ? "Vous" : "Assistant"}
-                  </div>
-                  <pre className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{entry.text}</pre>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  content: string;
 }
 
-export default function ChatPanel({ campaignId, onUpdateHtml }: ChatPanelProps) {
-  const [instruction, setInstruction] = useState("");
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+const SUGGESTIONS = [
+  "Rends le titre principal plus percutant",
+  "Change le texte du bouton en « Réserver ma place »",
+  "Réécris la section prix sur un ton plus rassurant",
+];
+
+export default function ChatPanel({ campaignId, onHtmlUpdate }: Props) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!instruction.trim()) return;
-    setLoading(true);
+  const send = async (text: string) => {
+    const message = text.trim();
+    if (!message || loading) return;
+
+    const history = messages;
+    setMessages([...history, { role: "user", content: message }]);
+    setInput("");
     setError("");
-
-    setHistory((prev) => [...prev, { role: "user", text: instruction.trim() }]);
-
+    setLoading(true);
     try {
-      const data = await chatCampaign(campaignId, instruction.trim());
-      onUpdateHtml(data.html);
-      setHistory((prev) => [
+      const res = await chatEditPage(campaignId, message, history);
+      if (res.html) onHtmlUpdate(res.html);
+      const changed = res.changed?.length
+        ? `\n\nSections mises à jour : ${res.changed.join(", ")}`
+        : "";
+      setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          text: `Compétence appliquée : ${data.skill}. Changements : ${JSON.stringify(
-            data.changes,
-            null,
-            2
-          )}`,
-        },
+        { role: "assistant", content: (res.reply || "C'est fait.") + changed },
       ]);
-      setInstruction("");
-    } catch (err: any) {
-      const backendMessage = err?.response?.data?.detail || err?.response?.data?.message;
-      setError(
-        backendMessage ?? (err instanceof Error ? err.message : "Erreur réseau lors de l'édition IA.")
-      );
-      setHistory((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          text: "La demande n'a pas pu être traitée. Vérifiez que le backend est démarré et que le modèle IA est disponible.",
-        },
-      ]);
+    } catch (err: unknown) {
+      const detail =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        "Erreur lors de la modification.";
+      setError(detail);
     } finally {
       setLoading(false);
     }
   };
 
-  const closeMobile = () => setMobileOpen(false);
-
   return (
-    <>
-      {/* Desktop / large screens: inline panel */}
-      <div className="hidden sm:block">
-        <PanelContent
-          instruction={instruction}
-          setInstruction={setInstruction}
-          handleSubmit={handleSubmit}
-          loading={loading}
-          error={error}
-          history={history}
-        />
+    <div className="flex h-full flex-col rounded-2xl border border-[#e7ddd0] bg-white shadow-sm">
+      <div className="border-b border-[#e7ddd0] px-4 py-3">
+        <h2 className="app-title text-sm font-bold">💬 Assistant d'édition</h2>
+        <p className="text-xs text-gray-500">Demandez une modification, la page se met à jour.</p>
       </div>
 
-      {/* Mobile: floating button + drawer */}
-      <div className="sm:hidden">
-        <button
-          aria-label="Ouvrir l'éditeur IA"
-          onClick={() => setMobileOpen(true)}
-          className="fixed right-4 bottom-6 z-40 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#f08b5a] to-[#e56f3b] px-4 py-3 text-white shadow-lg"
-        >
-          💬 Éditeur IA
-        </button>
-
-        {mobileOpen && (
-          <div className="fixed inset-0 z-50 flex items-end sm:hidden">
-            <div className="absolute inset-0 bg-black/40" onClick={closeMobile} />
-            <div className="relative w-full rounded-t-2xl bg-white p-4 shadow-xl">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Assistant IA</h3>
-                <button onClick={closeMobile} className="text-sm text-slate-600">Fermer</button>
-              </div>
-              <PanelContent
-                instruction={instruction}
-                setInstruction={setInstruction}
-                handleSubmit={handleSubmit}
-                loading={loading}
-                error={error}
-                history={history}
-              />
-            </div>
+      <div className="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
+        {messages.length === 0 && (
+          <div className="space-y-2">
+            {SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => send(suggestion)}
+                className="coral-soft block w-full rounded-lg border border-[#f0c5b0] px-3 py-2 text-left text-xs font-medium hover:bg-[#fbe8de]"
+              >
+                {suggestion}
+              </button>
+            ))}
           </div>
         )}
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`whitespace-pre-wrap rounded-lg px-3 py-2 ${
+              message.role === "user"
+                ? "coral-soft ml-6 border border-[#f0c5b0]"
+                : "mr-6 bg-gray-50 text-gray-800"
+            }`}
+          >
+            {message.content}
+          </div>
+        ))}
+        {loading && <p className="text-xs text-gray-500">L'assistant modifie la page...</p>}
+        {error && (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+            {error}
+          </p>
+        )}
       </div>
-    </>
+
+      <form
+        className="flex gap-2 border-t border-[#e7ddd0] p-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          send(input);
+        }}
+      >
+        <input
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          placeholder="Ex : raccourcis le sous-titre"
+          className="flex-1 rounded-lg border border-[#e7ddd0] px-3 py-2 text-sm focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="coral-soft rounded-lg border border-[#f0c5b0] px-3 py-2 text-xs font-semibold disabled:opacity-50"
+        >
+          Envoyer
+        </button>
+      </form>
+    </div>
   );
 }

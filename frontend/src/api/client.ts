@@ -28,9 +28,25 @@ export async function generateLandingPage(campaignId: string) {
   return res.data;
 }
 
-export async function chatCampaign(campaignId: string, instruction: string) {
-  const res = await api.post(`/campaigns/${campaignId}/chat`, { instruction });
-  return res.data;
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatEditResponse {
+  reply: string;
+  changed: string[];
+  page_state: Record<string, unknown>;
+  html?: string;
+}
+
+export async function chatEditPage(
+  campaignId: string,
+  message: string,
+  history: ChatMessage[] = []
+) {
+  const res = await api.post(`/campaigns/${campaignId}/chat`, { message, history });
+  return res.data as ChatEditResponse;
 }
 
 export async function uploadImage(file: File) {
