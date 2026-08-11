@@ -43,6 +43,10 @@ La génération reste sur Ollama. Le chatbot de l'écran d'aperçu utilise OpenA
 - appliquer une modification, via l'outil `apply_edits`, qui ne touche que le `page_state` structuré ;
   le HTML est ensuite réassemblé par le template.
 
+Il refuse explicitement ce qu'il ne peut pas faire plutôt que de modifier autre chose : les images
+(photo du formateur, logo) passent par `/api/upload` et ne sont pas éditables, et une demande dont
+aucune modification n'a pu être retenue le dit clairement au lieu de prétendre avoir réussi.
+
 Dans `backend/.env` :
 
 ```env
