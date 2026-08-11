@@ -57,6 +57,16 @@ OLLAMA_MODEL=llama3.2:7b
 
 Puis : `ollama pull llama3.2:7b`
 
+## Activation de l'Assistant de modification IA
+
+Pour utiliser le chatbot de modification, ajoutez votre clé OpenAI dans `backend/.env` :
+
+```env
+OPENAI_API_KEY=sk-...your-key...
+```
+
+Puis redémarrez le backend.
+
 ## Structure
 
 - **Wizard 5 étapes** : formateur, formation, branding, preuve sociale, récap

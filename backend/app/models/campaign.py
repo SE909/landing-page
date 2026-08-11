@@ -43,6 +43,7 @@ class FormationInfo(BaseModel):
 
 class BrandingInfo(BaseModel):
     tone: str
+    ai_model: str = "ollama"
     primary_color: str = "#2563eb"
     secondary_color: str = "#1e40af"
     style: str
