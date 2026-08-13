@@ -1,51 +1,58 @@
-import json
+from copy import deepcopy
 
-name = "Edit Hero"
-keywords = [
-    "hero",
-    "titre",
-    "sous-titre",
-    "cta",
-    "call to action",
-    "appel à l'action",
-    "titre principal",
-    "titre accrocheur",
-]
+TOOL_NAME = "edit_hero"
+ALLOWED_FIELDS = {"title", "subtitle", "cta_text"}
 
 
-def matches(instruction: str) -> bool:
-    normalized = instruction.lower()
-    return any(keyword in normalized for keyword in keywords)
-
-
-def build_prompt(page_state: dict, instruction: str) -> str:
-    hero = page_state.get("hero", {})
-    return f"""Tu es un assistant spécialisé en landing pages.
-Modifie UNIQUEMENT la section hero selon l'instruction suivante.
-Ne change rien d'autre.
-
-Hero actuel :
-{json.dumps(hero, ensure_ascii=False, indent=2)}
-
-Instruction : {instruction}
-
-Réponds UNIQUEMENT avec un JSON valide contenant au maximum les clés : title, subtitle, cta_text.
-Si une valeur ne doit pas changer, ne la mentionne pas dans la réponse.
-"""
+def tool_definition() -> dict:
+    return {
+        "type": "function",
+        "function": {
+            "name": TOOL_NAME,
+            "description": "Modifie le titre, le sous-titre ou le bouton principal de la section hero.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Nouveau titre du hero."},
+                    "subtitle": {"type": "string", "description": "Nouveau sous-titre du hero."},
+                    "cta_text": {"type": "string", "description": "Nouveau texte du bouton du hero."},
+                },
+                "additionalProperties": False,
+            },
+        },
+    }
 
 
 def validate(changes: dict) -> bool:
-    if not isinstance(changes, dict):
-        return False
-    allowed = {"title", "subtitle", "cta_text"}
-    return any(key in allowed for key in changes.keys())
+    return (
+        isinstance(changes, dict)
+        and bool(changes)
+        and set(changes).issubset(ALLOWED_FIELDS)
+        and all(isinstance(value, str) and value.strip() for value in changes.values())
+    )
 
 
 def apply(page_state: dict, changes: dict) -> dict:
     if not validate(changes):
         return page_state
-    updated = dict(page_state)
+    updated = deepcopy(page_state)
     updated_hero = dict(updated.get("hero", {}))
-    updated_hero.update(changes)
+    updated_hero.update({key: value.strip() for key, value in changes.items()})
     updated["hero"] = updated_hero
     return updated
+
+
+def execute(page_state: dict, arguments: dict) -> dict:
+    if not validate(arguments):
+        return {
+            "ok": False,
+            "error": "Le hero doit contenir au moins un texte non vide parmi le titre, le sous-titre ou le bouton.",
+        }
+
+    changes = {key: value.strip() for key, value in arguments.items()}
+    return {
+        "ok": True,
+        "page_state": apply(page_state, changes),
+        "changes": {"hero": changes},
+        "summary": "La section hero a été mise à jour.",
+    }

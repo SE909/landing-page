@@ -1,54 +1,57 @@
-import json
+from copy import deepcopy
 
-name = "Remove Section"
-keywords = [
-    "supprimer",
-    "remove",
-    "retirer",
-    "delete",
-    "enlever",
-]
-
-section_names = [
-    "hero",
-    "features",
-    "benefits",
-    "testimonials",
-    "pricing",
-    "faq",
-    "footer",
-]
+TOOL_NAME = "remove_section"
+SECTION_NAMES = {"features", "benefits", "testimonials", "faq", "footer"}
 
 
-def matches(instruction: str) -> bool:
-    normalized = instruction.lower()
-    return any(keyword in normalized for keyword in keywords) and any(name in normalized for name in section_names)
+def tool_definition() -> dict:
+    return {
+        "type": "function",
+        "function": {
+            "name": TOOL_NAME,
+            "description": "Supprime une section optionnelle de la landing page.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "section": {
+                        "type": "string",
+                        "enum": sorted(SECTION_NAMES),
+                        "description": "Section à supprimer.",
+                    },
+                },
+                "required": ["section"],
+                "additionalProperties": False,
+            },
+        },
+    }
 
 
-def build_prompt(page_state: dict, instruction: str) -> str:
-    return f"""Tu es un assistant pour landing pages.
-Supprime uniquement la section demandée par l'utilisateur.
-Ne change rien d'autre.
-
-Instruction : {instruction}
-
-Réponds UNIQUEMENT avec un JSON valide qui contient une clé de section et une valeur vide appropriée.
-Exemple : {{"faq":[]}} ou {{"testimonials":[]}}.
-"""
+def validate(arguments: dict) -> bool:
+    return isinstance(arguments, dict) and set(arguments) == {"section"} and arguments.get("section") in SECTION_NAMES
 
 
-def validate(changes: dict) -> bool:
-    if not isinstance(changes, dict):
-        return False
-    if len(changes) != 1:
-        return False
-    section = next(iter(changes))
-    return section in section_names
-
-
-def apply(page_state: dict, changes: dict) -> dict:
-    if not validate(changes):
+def apply(page_state: dict, arguments: dict) -> dict:
+    if not validate(arguments):
         return page_state
-    updated = dict(page_state)
-    updated[next(iter(changes))] = next(iter(changes.values()))
+    updated = deepcopy(page_state)
+    updated[arguments["section"]] = []
     return updated
+
+
+def execute(page_state: dict, arguments: dict) -> dict:
+    if not validate(arguments):
+        return {
+            "ok": False,
+            "error": "La section demandée est inconnue. Les sections supprimables sont features, benefits, testimonials, faq et footer.",
+        }
+
+    section = arguments["section"]
+    if not page_state.get(section):
+        return {"ok": False, "error": f"La section {section} n'est pas présente sur cette landing page."}
+
+    return {
+        "ok": True,
+        "page_state": apply(page_state, arguments),
+        "changes": {section: []},
+        "summary": f"La section {section} a été supprimée.",
+    }

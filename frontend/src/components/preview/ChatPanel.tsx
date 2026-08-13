@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { chatCampaign } from "../../api/client";
+import { useState, useEffect, useRef } from "react";
+import { applyChatCampaign, chatCampaign } from "../../api/client";
 
 interface ChatPanelProps {
   campaignId: string;
@@ -9,6 +9,15 @@ interface ChatPanelProps {
 type HistoryItem = {
   role: "user" | "assistant";
   text: string;
+};
+
+type ChatResponse = {
+  message: string;
+  proposal?: {
+    id: string;
+    html_preview: string;
+  };
+  html?: string;
 };
 
 type PanelContentProps = {
@@ -21,8 +30,20 @@ type PanelContentProps = {
 };
 
 function PanelContent({ instruction, setInstruction, handleSubmit, loading, error, history }: PanelContentProps) {
+  const historyRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (historyRef.current) {
+      try {
+        historyRef.current.scrollTo({ top: historyRef.current.scrollHeight, behavior: "smooth" });
+      } catch (e) {
+        historyRef.current.scrollTop = historyRef.current.scrollHeight;
+      }
+    }
+  }, [history]);
+
   return (
-    <div className="rounded-3xl border border-[#e7ddd0] bg-white p-5 shadow-sm">
+    <div className="flex h-full flex-col rounded-3xl border border-[#e7ddd0] bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold">Assistant de modification IA</h2>
@@ -35,56 +56,75 @@ function PanelContent({ instruction, setInstruction, handleSubmit, loading, erro
         </span>
       </div>
 
-      <div className="mb-4">
-        <textarea
-          rows={3}
-          value={instruction}
-          onChange={(e) => setInstruction(e.target.value)}
-          placeholder="Par exemple : Augmente la pression avec un appel à l'action plus urgent."
-          className="input-field min-h-[110px] w-full rounded-2xl border border-[#e7ddd0] bg-[#f9f7f2] p-4 text-sm outline-none transition focus:border-[#e8734a] focus:ring-2 focus:ring-[#e8734a]/10"
-        />
-      </div>
-
-      {error ? (
-        <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-100">
-          {error}
-        </div>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={loading || !instruction.trim()}
-          className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
-        >
-          {loading ? "Application en cours..." : "Appliquer à la page"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setInstruction("")}
-          className="btn-secondary inline-flex items-center gap-2"
-        >
-          Effacer
-        </button>
-      </div>
-
-      <div className="mt-6 space-y-4">
-        {history.length > 0 && (
-          <div className="rounded-3xl border border-[#e7ddd0] bg-[#f9f7f2] p-4">
+      <div className="mt-6 flex flex-1 flex-col">
+          {history.length > 0 && (
+            <div ref={historyRef} className="rounded-3xl border border-[#e7ddd0] bg-[#f9f7f2] p-4 mb-4 flex-1 overflow-auto max-h-[55vh]">
             <h3 className="mb-3 text-sm font-semibold text-slate-700">Historique des instructions</h3>
             <div className="space-y-3">
-              {history.map((entry, index) => (
-                <div key={index} className={entry.role === "user" ? "rounded-2xl bg-white p-3 shadow-sm" : "rounded-2xl bg-[#fff8ed] p-3 shadow-sm"}>
-                  <div className="mb-1 text-[11px] uppercase tracking-[0.12em] text-slate-500">
-                    {entry.role === "user" ? "Vous" : "Assistant"}
+              {/* Transform history so assistant responses appear before the user's message when they are consecutive */}
+              {(() => {
+                const display: HistoryItem[] = [];
+                for (let i = 0; i < history.length; i++) {
+                  const entry = history[i];
+                  const next = history[i + 1];
+                  if (entry.role === "user" && next && next.role === "assistant") {
+                    // show user request above assistant response
+                    display.push(entry);
+                    display.push(next);
+                    i++; // skip next since we've already pushed it
+                  } else {
+                    display.push(entry);
+                  }
+                }
+                return display.map((entry, index) => (
+                  <div key={index} className={entry.role === "user" ? "rounded-2xl bg-white p-3 shadow-sm" : "rounded-2xl bg-[#fff8ed] p-3 shadow-sm"}>
+                    <div className="mb-1 text-[11px] uppercase tracking-[0.12em] text-slate-500">
+                      {entry.role === "user" ? "Vous" : "Assistant"}
+                    </div>
+                    <pre className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{entry.text}</pre>
                   </div>
-                  <pre className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{entry.text}</pre>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
         )}
+
+        {/* Input area stays fixed at bottom of the panel */}
+        <div className="mt-4 w-full">
+          {error ? (
+            <div className="mb-2 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-100">
+              {error}
+            </div>
+          ) : null}
+
+          <div className="mb-4">
+            <textarea
+              rows={3}
+              value={instruction}
+              onChange={(e) => setInstruction(e.target.value)}
+              placeholder="Par exemple : Augmente la pression avec un appel à l'action plus urgent."
+              className="input-field min-h-[110px] w-full rounded-2xl border border-[#e7ddd0] bg-[#f9f7f2] p-4 text-sm outline-none transition focus:border-[#e8734a] focus:ring-2 focus:ring-[#e8734a]/10"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading || !instruction.trim()}
+              className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+            >
+              {loading ? "Envoi en cours..." : "Envoyer"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setInstruction("")}
+              className="btn-secondary inline-flex items-center gap-2"
+            >
+              Effacer
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -95,30 +135,38 @@ export default function ChatPanel({ campaignId, onUpdateHtml }: ChatPanelProps) 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [pendingProposal, setPendingProposal] = useState<any>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleSubmit = async () => {
     if (!instruction.trim()) return;
+    const submittedInstruction = instruction.trim();
     setLoading(true);
     setError("");
-
-    setHistory((prev) => [...prev, { role: "user", text: instruction.trim() }]);
+    setHistory((prev) => [...prev, { role: "user", text: submittedInstruction }]);
+    setInstruction("");
 
     try {
-      const data = await chatCampaign(campaignId, instruction.trim());
-      onUpdateHtml(data.html);
+      const data = (await chatCampaign(campaignId, submittedInstruction)) as ChatResponse;
+      const message = data.message;
+
+      if (data.proposal?.html_preview) {
+        setPendingProposal({ proposal_id: data.proposal.id });
+        onUpdateHtml(data.proposal.html_preview);
+      }
+
       setHistory((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          text: `Compétence appliquée : ${data.skill}. Changements : ${JSON.stringify(
-            data.changes,
-            null,
-            2
-          )}`,
-        },
+        { role: "assistant", text: message },
       ]);
-      setInstruction("");
+
+      if (data.proposal?.html_preview) {
+        return;
+      }
+
+      if (data.html) {
+        onUpdateHtml(data.html);
+      }
     } catch (err: any) {
       const backendMessage = err?.response?.data?.detail || err?.response?.data?.message;
       setError(
@@ -136,6 +184,57 @@ export default function ChatPanel({ campaignId, onUpdateHtml }: ChatPanelProps) 
     }
   };
 
+  const handleConfirm = async () => {
+    if (!pendingProposal) return;
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = (await applyChatCampaign(campaignId, pendingProposal.proposal_id)) as ChatResponse;
+      if (data.html) {
+        onUpdateHtml(data.html);
+      }
+      setHistory((prev) => [
+        ...prev,
+        { role: "assistant", text: data.message },
+      ]);
+      setPendingProposal(null);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Échec de l'application des changements.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelProposal = () => {
+    setPendingProposal(null);
+    setHistory((prev) => [
+      ...prev,
+      { role: "assistant", text: "La proposition a été annulée." },
+    ]);
+  };
+
+  const proposalActions = pendingProposal ? (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <button
+        type="button"
+        onClick={handleConfirm}
+        disabled={loading}
+        className="btn-primary inline-flex items-center gap-2"
+      >
+        {loading ? "Application..." : "Confirmer et appliquer"}
+      </button>
+      <button
+        type="button"
+        onClick={handleCancelProposal}
+        disabled={loading}
+        className="btn-secondary inline-flex items-center gap-2"
+      >
+        Annuler
+      </button>
+    </div>
+  ) : null;
+
   const closeMobile = () => setMobileOpen(false);
 
   return (
@@ -150,6 +249,7 @@ export default function ChatPanel({ campaignId, onUpdateHtml }: ChatPanelProps) 
           error={error}
           history={history}
         />
+        {proposalActions}
       </div>
 
       {/* Mobile: floating button + drawer */}
@@ -170,6 +270,7 @@ export default function ChatPanel({ campaignId, onUpdateHtml }: ChatPanelProps) 
                 <h3 className="text-sm font-semibold">Assistant IA</h3>
                 <button onClick={closeMobile} className="text-sm text-slate-600">Fermer</button>
               </div>
+
               <PanelContent
                 instruction={instruction}
                 setInstruction={setInstruction}
@@ -178,6 +279,8 @@ export default function ChatPanel({ campaignId, onUpdateHtml }: ChatPanelProps) 
                 error={error}
                 history={history}
               />
+
+              {proposalActions}
             </div>
           </div>
         )}

@@ -33,6 +33,12 @@ export async function chatCampaign(campaignId: string, instruction: string) {
   return res.data;
 }
 
+export async function applyChatCampaign(campaignId: string, proposalId: string, apiKey?: string) {
+  const config = apiKey ? { headers: { "X-API-KEY": apiKey } } : undefined;
+  const res = await api.post(`/campaigns/${campaignId}/chat`, { proposal_id: proposalId, apply: true }, config);
+  return res.data;
+}
+
 export async function uploadImage(file: File) {
   const form = new FormData();
   form.append("file", file);

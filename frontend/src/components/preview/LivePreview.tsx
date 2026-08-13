@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Props {
   html: string;
@@ -12,10 +12,54 @@ export default function LivePreview({ html }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [copied, setCopied] = useState(false);
   const [frameHeight, setFrameHeight] = useState(900);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  const previewHostRef = useRef<HTMLDivElement | null>(null);
+
+  // Apply preview safeguards before the iframe paints.  Adding them after load
+  // briefly displayed header logos at their natural (very large) dimensions.
+  const previewHtml = useMemo(() => {
+    const previewStyles = `
+      <style id="landing-page-preview-guards">
+        img { max-width: 100%; }
+        .site-header {
+          position: static !important;
+          top: auto !important;
+          right: auto !important;
+          bottom: auto !important;
+          left: auto !important;
+        }
+        header .logo img,
+        .site-header .logo img,
+        header img[alt*="logo" i] {
+          display: block !important;
+          width: auto !important;
+          height: 36px !important;
+          max-width: min(220px, 100%) !important;
+          max-height: 36px !important;
+          object-fit: contain !important;
+        }
+      </style>`;
+
+    return html.includes("</head>")
+      ? html.replace("</head>", `${previewStyles}</head>`)
+      : `${previewStyles}${html}`;
+  }, [html]);
 
   useEffect(() => {
     setFrameHeight(900);
   }, [html, viewport]);
+
+  useEffect(() => {
+    const host = previewHostRef.current;
+    if (!host) return;
+
+    // The host has 16 px padding on each side; only its content box is usable.
+    const updateWidth = () => setAvailableWidth(Math.max(host.clientWidth - 32, 1));
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, []);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(html);
@@ -26,13 +70,16 @@ export default function LivePreview({ html }: Props) {
   const getViewportWidth = () => {
     switch (viewport) {
       case "mobile":
-        return "w-[375px]";
+        return 375;
       case "tablet":
-        return "w-[768px]";
+        return 768;
       default:
-        return "w-full";
+        return availableWidth || 1;
     }
   };
+
+  const frameWidth = getViewportWidth();
+  const previewScale = viewport === "desktop" ? 1 : Math.min(1, (availableWidth || frameWidth) / frameWidth);
 
   const resizePreviewFrame = (frame: HTMLIFrameElement) => {
     const document = frame.contentDocument;
@@ -129,17 +176,26 @@ export default function LivePreview({ html }: Props) {
       </div>
 
       {/* Main Content Viewer */}
-      <div className="flex min-h-[75vh] justify-center bg-[#f7f1eb] p-4">
+      <div ref={previewHostRef} className="flex min-h-[75vh] justify-center bg-[#f7f1eb] p-4">
         {viewMode === "preview" ? (
           <div
-            className={`transition-all duration-300 ${getViewportWidth()} overflow-hidden rounded-xl border border-[#e7ddd0] bg-white shadow-lg`}
+            className="overflow-hidden rounded-xl border border-[#e7ddd0] bg-white shadow-lg transition-all duration-300"
+            style={{
+              width: `${frameWidth * previewScale}px`,
+              height: `${frameHeight * previewScale}px`,
+            }}
           >
             <iframe
-              srcDoc={html}
+              srcDoc={previewHtml}
               sandbox="allow-same-origin"
               title="Landing Page Preview"
-              className="w-full border-0"
-              style={{ height: `${frameHeight}px` }}
+              className="block border-0"
+              style={{
+                width: `${frameWidth}px`,
+                height: `${frameHeight}px`,
+                transform: `scale(${previewScale})`,
+                transformOrigin: "top left",
+              }}
               onLoad={(event) => {
                 const frame = event.currentTarget;
                 resizePreviewFrame(frame);

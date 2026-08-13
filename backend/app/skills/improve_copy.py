@@ -1,55 +1,70 @@
-import json
+from copy import deepcopy
 
-name = "Improve Copy"
-keywords = [
-    "rewrite",
-    "réécrire",
-    "améliore",
-    "améliorer",
-    "plus persuasive",
-    "persuasive",
-    "ton",
-    "copy",
-    "texte",
-    "contenu",
-]
+TOOL_NAME = "improve_copy"
+ALLOWED_SECTIONS = {
+    "hero",
+    "problem_solution",
+    "program",
+    "social_proof",
+    "pricing",
+    "instructor",
+    "testimonial",
+    "faq",
+}
 
 
-def matches(instruction: str) -> bool:
-    normalized = instruction.lower()
-    return any(keyword in normalized for keyword in keywords)
+def tool_definition() -> dict:
+    return {
+        "type": "function",
+        "function": {
+            "name": TOOL_NAME,
+            "description": "Améliore ou réécrit des textes existants sans modifier la structure de la landing page.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "updates": {
+                        "type": "object",
+                        "description": "Sections à mettre à jour. Chaque valeur doit être un objet ne contenant que les champs textuels à modifier.",
+                        "additionalProperties": {"type": "object"},
+                    },
+                },
+                "required": ["updates"],
+                "additionalProperties": False,
+            },
+        },
+    }
 
 
-def build_prompt(page_state: dict, instruction: str) -> str:
-    return f"""Tu es un assistant copywriting.
-Améliore le texte de la landing page selon l'instruction sans modifier la structure.
-Ne change rien d'autre.
-
-Page actuelle :
-{json.dumps(page_state, ensure_ascii=False, indent=2)}
-
-Instruction : {instruction}
-
-Réponds UNIQUEMENT avec un JSON valide contenant les sections qui doivent être mises à jour. Exemple : {{"hero":{{"title":"...","subtitle":"..."}},"pricing":{{"value_proposition":"..."}}}}
-"""
-
-
-def validate(changes: dict) -> bool:
-    if not isinstance(changes, dict):
+def validate(arguments: dict) -> bool:
+    if not isinstance(arguments, dict) or set(arguments) != {"updates"}:
         return False
-    allowed = {"hero", "problem_solution", "program", "social_proof", "pricing", "instructor", "testimonial", "faq"}
-    return any(key in allowed for key in changes.keys())
+    updates = arguments.get("updates")
+    if not isinstance(updates, dict) or not updates or not set(updates).issubset(ALLOWED_SECTIONS):
+        return False
+    return all(isinstance(value, dict) and value for value in updates.values())
 
 
-def apply(page_state: dict, changes: dict) -> dict:
-    if not validate(changes):
+def apply(page_state: dict, arguments: dict) -> dict:
+    if not validate(arguments):
         return page_state
-    updated = dict(page_state)
-    for section, value in changes.items():
-        if isinstance(value, dict):
-            updated_section = dict(updated.get(section, {}))
-            updated_section.update(value)
-            updated[section] = updated_section
-        else:
-            updated[section] = value
+    updated = deepcopy(page_state)
+    for section, values in arguments["updates"].items():
+        current = dict(updated.get(section, {}))
+        current.update(deepcopy(values))
+        updated[section] = current
     return updated
+
+
+def execute(page_state: dict, arguments: dict) -> dict:
+    if not validate(arguments):
+        return {
+            "ok": False,
+            "error": "Les améliorations doivent cibler au moins une section textuelle connue avec des champs à modifier.",
+        }
+
+    return {
+        "ok": True,
+        "page_state": apply(page_state, arguments),
+        "changes": deepcopy(arguments["updates"]),
+        "summary": "Les textes demandés ont été améliorés.",
+    }

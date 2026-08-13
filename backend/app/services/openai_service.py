@@ -1,7 +1,8 @@
-import httpx
 import json
 import logging
 import re
+
+import httpx
 
 from app.config import settings
 
@@ -16,7 +17,12 @@ class OpenAIServiceError(ValueError):
     pass
 
 
-async def generate_with_openai(payload: dict, campaign: dict = None) -> dict:
+async def create_chat_completion(payload: dict) -> dict:
+    """Call OpenAI Chat Completions and return the complete assistant message.
+
+    The complete message is needed for native tool calling because it includes
+    both the user-facing content and the optional ``tool_calls`` array.
+    """
     if not settings.openai_api_key:
         raise OpenAIConfigurationError(
             "OpenAI API key is required for the chatbot. Set OPENAI_API_KEY in the backend environment or .env file."
@@ -34,25 +40,47 @@ async def generate_with_openai(payload: dict, campaign: dict = None) -> dict:
             )
             response.raise_for_status()
             data = response.json()
-            raw = data["choices"][0]["message"]["content"]
 
-        cleaned_raw = re.sub(r"```json\s*", "", raw)
-        cleaned_raw = re.sub(r"```\s*", "", cleaned_raw).strip()
-
-        match = re.search(r"\{.*\}", cleaned_raw, re.DOTALL)
-        if match:
-            return json.loads(match.group())
-
-        raise OpenAIServiceError(f"OpenAI response ne contient pas de JSON valide : {cleaned_raw}")
-    except httpx.HTTPStatusError as e:
-        body = e.response.text if e.response is not None else str(e)
-        logger.warning(f"OpenAI generation HTTP error ({e.response.status_code}): {body}")
-        raise OpenAIServiceError(f"OpenAI HTTP error: {body}")
-    except json.JSONDecodeError as e:
-        logger.warning(f"OpenAI JSON decode failed: {e}")
-        raise OpenAIServiceError("Impossible d’analyser la réponse JSON d’OpenAI.")
+        message = data.get("choices", [{}])[0].get("message")
+        if not isinstance(message, dict):
+            raise OpenAIServiceError("OpenAI n'a renvoyé aucun message assistant exploitable.")
+        return message
+    except httpx.HTTPStatusError as error:
+        body = error.response.text if error.response is not None else str(error)
+        status = error.response.status_code if error.response is not None else "unknown"
+        logger.warning("OpenAI HTTP error (%s): %s", status, body)
+        raise OpenAIServiceError(f"OpenAI HTTP error: {body}") from error
     except OpenAIConfigurationError:
         raise
-    except Exception as e:
-        logger.warning(f"OpenAI generation call failed ({e}).")
-        raise OpenAIServiceError(f"Erreur OpenAI : {e}")
+    except OpenAIServiceError:
+        raise
+    except Exception as error:
+        logger.warning("OpenAI chat completion failed: %s", error)
+        raise OpenAIServiceError(f"Erreur OpenAI : {error}") from error
+
+
+def assistant_text(message: dict) -> str:
+    """Return safe plain assistant text, never a serialized tool payload."""
+    content = message.get("content")
+    return content.strip() if isinstance(content, str) else ""
+
+
+async def generate_with_openai(payload: dict, campaign: dict = None) -> dict:
+    """Backward-compatible JSON helper for non-chat callers."""
+    message = await create_chat_completion(payload)
+    raw = assistant_text(message)
+    cleaned_raw = re.sub(r"```json\s*", "", raw)
+    cleaned_raw = re.sub(r"```\s*", "", cleaned_raw).strip()
+    match = re.search(r"\{.*\}", cleaned_raw, re.DOTALL)
+    if not match:
+        raise OpenAIServiceError(f"OpenAI response ne contient pas de JSON valide : {cleaned_raw}")
+    try:
+        return json.loads(match.group())
+    except json.JSONDecodeError as error:
+        logger.warning("OpenAI JSON decode failed: %s", error)
+        raise OpenAIServiceError("Impossible d’analyser la réponse JSON d’OpenAI.") from error
+
+
+async def generate_text_with_openai(payload: dict, campaign: dict = None) -> str:
+    """Backward-compatible plain-text helper for non-tool chat callers."""
+    return assistant_text(await create_chat_completion(payload))

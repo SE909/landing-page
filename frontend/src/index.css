@@ -46,7 +46,7 @@ body {
 .btn-secondary:hover { background: #fff8f4; border-color: var(--aic-peach); }
 .card { @apply rounded-2xl bg-white p-6 shadow-sm; border: 1px solid var(--aic-line); box-shadow: 0 18px 50px rgba(120, 90, 60, .08); }
 
-.brand-logo { height: 36px; width: auto; object-fit: contain; }
+.brand-logo { height: 28px; width: auto; object-fit: contain; }
 .brand-badge { background: rgba(232, 115, 74, .12); color: var(--aic-coral); }
 
 ::selection { background: rgba(232, 115, 74, .22); }

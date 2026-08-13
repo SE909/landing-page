@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-5"
     openai_api_key: str = ""
+    admin_api_key: str = ""
     upload_dir: str = "uploads"
     cors_origins: str = "http://localhost:5173"
 

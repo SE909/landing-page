@@ -1,53 +1,64 @@
-import json
+from copy import deepcopy
 
-name = "Add Section"
-keywords = [
-    "ajouter",
-    "add",
-    "nouvelle section",
-    "ajoute",
-    "ajouter une section",
-    "ajoute une section",
-]
-
-section_names = [
-    "hero",
-    "features",
-    "benefits",
-    "testimonials",
-    "pricing",
-    "faq",
-    "footer",
-]
+TOOL_NAME = "add_section"
+SECTION_NAMES = {"features", "benefits", "testimonials", "faq", "footer"}
 
 
-def matches(instruction: str) -> bool:
-    normalized = instruction.lower()
-    return any(keyword in normalized for keyword in keywords) and any(name in normalized for name in section_names)
+def tool_definition() -> dict:
+    return {
+        "type": "function",
+        "function": {
+            "name": TOOL_NAME,
+            "description": "Ajoute ou remplace le contenu d'une section optionnelle de la landing page.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "section": {
+                        "type": "string",
+                        "enum": sorted(SECTION_NAMES),
+                        "description": "Section à ajouter.",
+                    },
+                    "content": {
+                        "type": ["object", "array"],
+                        "description": "Contenu structuré de la section demandée.",
+                    },
+                },
+                "required": ["section", "content"],
+                "additionalProperties": False,
+            },
+        },
+    }
 
 
-def build_prompt(page_state: dict, instruction: str) -> str:
-    return f"""Tu es un assistant créatif pour landing pages.
-Ajoute UNE seule section demandée par l'utilisateur.
-Ne change rien d'autre.
-
-Instruction : {instruction}
-
-Réponds UNIQUEMENT avec un JSON valide contenant la clé de la section à créer.
-Exemple : {{"testimonials":[{{"name":"...","text":"...","rating":5}}]}} ou {{"faq":[{{"question":"...","answer":"..."}}]}}.
-"""
+def validate(arguments: dict) -> bool:
+    return (
+        isinstance(arguments, dict)
+        and set(arguments) == {"section", "content"}
+        and arguments.get("section") in SECTION_NAMES
+        and isinstance(arguments.get("content"), (dict, list))
+        and bool(arguments["content"])
+    )
 
 
-def validate(changes: dict) -> bool:
-    if not isinstance(changes, dict):
-        return False
-    return len(changes) == 1 and list(changes.keys())[0] in section_names
-
-
-def apply(page_state: dict, changes: dict) -> dict:
-    if not validate(changes):
+def apply(page_state: dict, arguments: dict) -> dict:
+    if not validate(arguments):
         return page_state
-    updated = dict(page_state)
-    section, content = next(iter(changes.items()))
-    updated[section] = content
+    updated = deepcopy(page_state)
+    updated[arguments["section"]] = deepcopy(arguments["content"])
     return updated
+
+
+def execute(page_state: dict, arguments: dict) -> dict:
+    if not validate(arguments):
+        return {
+            "ok": False,
+            "error": "La section demandée est inconnue ou son contenu est vide. Les sections possibles sont features, benefits, testimonials, faq et footer.",
+        }
+
+    section = arguments["section"]
+    return {
+        "ok": True,
+        "page_state": apply(page_state, arguments),
+        "changes": {section: arguments["content"]},
+        "summary": f"La section {section} a été ajoutée.",
+    }

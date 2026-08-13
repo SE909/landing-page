@@ -1,48 +1,59 @@
-import json
+from copy import deepcopy
+import re
 
-name = "Edit Colors"
-keywords = [
-    "couleur",
-    "blue",
-    "bleu",
-    "palette",
-    "primary",
-    "secondary",
-    "thème",
-]
+TOOL_NAME = "edit_colors"
+ALLOWED_FIELDS = {"primary_color", "secondary_color"}
+HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
-def matches(instruction: str) -> bool:
-    normalized = instruction.lower()
-    return any(keyword in normalized for keyword in keywords)
-
-
-def build_prompt(page_state: dict, instruction: str) -> str:
-    branding = page_state.get("branding", {})
-    return f"""Tu es un assistant UI/marketing.
-Modifie UNIQUEMENT les couleurs de la landing page dans le format de branding suivant.
-Ne change rien d'autre.
-
-Branding actuel :
-{json.dumps(branding, ensure_ascii=False, indent=2)}
-
-Instruction : {instruction}
-
-Réponds UNIQUEMENT avec un JSON valide contenant les clés : primary_color et/ou secondary_color.
-"""
+def tool_definition() -> dict:
+    return {
+        "type": "function",
+        "function": {
+            "name": TOOL_NAME,
+            "description": "Modifie les deux couleurs principales de la landing page. Utiliser des couleurs hexadécimales au format #RRGGBB.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "primary_color": {"type": "string", "description": "Couleur principale au format #RRGGBB."},
+                    "secondary_color": {"type": "string", "description": "Couleur secondaire au format #RRGGBB."},
+                },
+                "additionalProperties": False,
+            },
+        },
+    }
 
 
 def validate(changes: dict) -> bool:
-    if not isinstance(changes, dict):
-        return False
-    return any(key in changes for key in {"primary_color", "secondary_color"})
+    return (
+        isinstance(changes, dict)
+        and bool(changes)
+        and set(changes).issubset(ALLOWED_FIELDS)
+        and all(isinstance(value, str) and HEX_COLOR.fullmatch(value.strip()) for value in changes.values())
+    )
 
 
 def apply(page_state: dict, changes: dict) -> dict:
     if not validate(changes):
         return page_state
-    updated = dict(page_state)
-    updated_branding = dict(updated.get("branding", {}))
-    updated_branding.update({k: v for k, v in changes.items() if k in {"primary_color", "secondary_color"}})
-    updated["branding"] = updated_branding
+    updated = deepcopy(page_state)
+    branding = dict(updated.get("branding", {}))
+    branding.update({key: value.strip().upper() for key, value in changes.items()})
+    updated["branding"] = branding
     return updated
+
+
+def execute(page_state: dict, arguments: dict) -> dict:
+    if not validate(arguments):
+        return {
+            "ok": False,
+            "error": "Les couleurs doivent être au format hexadécimal #RRGGBB, par exemple #2563EB.",
+        }
+
+    changes = {key: value.strip().upper() for key, value in arguments.items()}
+    return {
+        "ok": True,
+        "page_state": apply(page_state, changes),
+        "changes": {"branding": changes},
+        "summary": "La palette de couleurs a été mise à jour.",
+    }

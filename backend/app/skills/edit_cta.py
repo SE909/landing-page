@@ -1,62 +1,82 @@
-import json
+from copy import deepcopy
 
-name = "Edit CTA"
-keywords = [
-    "cta",
-    "appel à l'action",
-    "bouton",
-    "call to action",
-    "inscription",
-    "réserver",
-]
-
-
-def matches(instruction: str) -> bool:
-    normalized = instruction.lower()
-    return any(keyword in normalized for keyword in keywords)
+TOOL_NAME = "edit_cta"
+ALLOWED_FIELDS = {
+    "hero_title",
+    "hero_subtitle",
+    "hero_cta_text",
+    "pricing_cta_text",
+    "value_proposition",
+    "guarantee",
+}
 
 
-def build_prompt(page_state: dict, instruction: str) -> str:
-    hero = page_state.get("hero", {})
-    pricing = page_state.get("pricing", {})
-    return f"""Tu es un assistant spécialisé en landing pages.
-Modifie UNIQUEMENT le texte des boutons et des appels à l'action.
-Ne change rien d'autre.
-
-Hero actuel :
-{json.dumps(hero, ensure_ascii=False, indent=2)}
-
-Pricing actuel :
-{json.dumps(pricing, ensure_ascii=False, indent=2)}
-
-Instruction : {instruction}
-
-Réponds UNIQUEMENT avec un JSON valide contenant des clés comme title, cta_text, value_proposition, guarantee, et/ou subtitle.
-Ne renvoie pas de markdown, pas d'explications.
-"""
+def tool_definition() -> dict:
+    return {
+        "type": "function",
+        "function": {
+            "name": TOOL_NAME,
+            "description": "Modifie les appels à l'action, leur contexte commercial ou leur texte associé.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "hero_title": {"type": "string", "description": "Nouveau titre du hero si nécessaire."},
+                    "hero_subtitle": {"type": "string", "description": "Nouveau sous-titre du hero si nécessaire."},
+                    "hero_cta_text": {"type": "string", "description": "Texte du bouton du hero."},
+                    "pricing_cta_text": {"type": "string", "description": "Texte du bouton de la section finale/pricing."},
+                    "value_proposition": {"type": "string", "description": "Texte de valeur de la section finale/pricing."},
+                    "guarantee": {"type": "string", "description": "Texte de garantie, si la landing en utilise un."},
+                },
+                "additionalProperties": False,
+            },
+        },
+    }
 
 
 def validate(changes: dict) -> bool:
-    if not isinstance(changes, dict):
-        return False
-    return any(key in changes for key in {"cta_text", "value_proposition", "guarantee", "title", "subtitle"})
+    return (
+        isinstance(changes, dict)
+        and bool(changes)
+        and set(changes).issubset(ALLOWED_FIELDS)
+        and all(isinstance(value, str) and value.strip() for value in changes.values())
+    )
 
 
 def apply(page_state: dict, changes: dict) -> dict:
     if not validate(changes):
         return page_state
-    updated = dict(page_state)
-    if "cta_text" in changes or "value_proposition" in changes or "guarantee" in changes:
-        updated_pricing = dict(updated.get("pricing", {}))
-        for key in ["cta_text", "value_proposition", "guarantee"]:
-            if key in changes:
-                updated_pricing[key] = changes[key]
-        updated["pricing"] = updated_pricing
-    if "title" in changes or "subtitle" in changes:
-        updated_hero = dict(updated.get("hero", {}))
-        if "title" in changes:
-            updated_hero["title"] = changes["title"]
-        if "subtitle" in changes:
-            updated_hero["subtitle"] = changes["subtitle"]
-        updated["hero"] = updated_hero
+    updated = deepcopy(page_state)
+    hero = dict(updated.get("hero", {}))
+    pricing = dict(updated.get("pricing", {}))
+
+    field_map = {
+        "hero_title": (hero, "title"),
+        "hero_subtitle": (hero, "subtitle"),
+        "hero_cta_text": (hero, "cta_text"),
+        "pricing_cta_text": (pricing, "cta_text"),
+        "value_proposition": (pricing, "value_proposition"),
+        "guarantee": (pricing, "guarantee"),
+    }
+    for field, value in changes.items():
+        target, target_field = field_map[field]
+        target[target_field] = value.strip()
+
+    updated["hero"] = hero
+    updated["pricing"] = pricing
     return updated
+
+
+def execute(page_state: dict, arguments: dict) -> dict:
+    if not validate(arguments):
+        return {
+            "ok": False,
+            "error": "Les textes de CTA doivent être non vides et correspondre à un champ d'appel à l'action autorisé.",
+        }
+
+    changes = {key: value.strip() for key, value in arguments.items()}
+    return {
+        "ok": True,
+        "page_state": apply(page_state, changes),
+        "changes": changes,
+        "summary": "Les appels à l'action ont été mis à jour.",
+    }
