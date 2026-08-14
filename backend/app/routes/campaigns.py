@@ -18,7 +18,13 @@ async def create_campaign(data: CampaignCreate):
     col = get_campaigns_collection()
     now = datetime.utcnow()
     doc = data.model_dump()
-    doc.update(status="draft", generated_html=None, created_at=now, updated_at=now)
+    doc.update(
+        status="draft",
+        page_state=None,
+        generated_html=None,
+        created_at=now,
+        updated_at=now,
+    )
     result = await col.insert_one(doc)
     doc["id"] = str(result.inserted_id)
     return doc

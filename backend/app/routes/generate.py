@@ -5,9 +5,10 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 
 from app.db.mongodb import get_campaigns_collection
-from app.services.ai_generation_service import generate_section_content
 from app.services.html_assembler import assemble_html
 from app.services.html_validator import validate_and_clean_html
+from app.services.ollama_service import generate_section_content
+from app.services.page_state import build_page_state, page_state_to_content
 from app.services.prompt_builder import build_content_prompt
 
 router = APIRouter(prefix="/api/campaigns", tags=["generate"])
@@ -22,22 +23,23 @@ async def generate_landing_page(campaign_id: str):
 
     campaign = {k: v for k, v in doc.items() if k != "_id"}
     prompt = build_content_prompt(campaign)
-    ai_content = await generate_section_content(prompt, campaign=campaign)
-    raw_html = assemble_html(campaign, ai_content)
+    raw_content = await generate_section_content(prompt, campaign=campaign)
+    page_state = build_page_state(campaign, raw_content)
+    raw_html = assemble_html(campaign, page_state_to_content(page_state))
     html = validate_and_clean_html(raw_html)
 
     await col.update_one(
         {"_id": ObjectId(campaign_id)},
         {
             "$set": {
+                "page_state": page_state,
                 "generated_html": html,
-                "page_state": ai_content,
                 "status": "generated",
                 "updated_at": datetime.utcnow(),
             }
         },
     )
-    return {"html": html, "status": "generated"}
+    return {"html": html, "page_state": page_state, "status": "generated"}
 
 
 @router.get("/{campaign_id}/export")
